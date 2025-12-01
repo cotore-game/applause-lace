@@ -1,12 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using DG.Tweening; // アニメーション用（推奨）
+using TMPro;
 
 public class GameView : MonoBehaviour
 {
     [SerializeField] private Image characterImage;
-    [SerializeField] private Text scoreText;
-    [SerializeField] private ParticleSystem confettiParticle;
+    [SerializeField] private TMP_Text scoreText;
+    // [SerializeField] private ParticleSystem confettiParticle;
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private Button clickAreaButton;
 
@@ -34,7 +34,6 @@ public class GameView : MonoBehaviour
 
     public void PlayConfetti()
     {
-        confettiParticle.Play();
         // ここでボタンが沈むアニメーションなどを入れると手触りが良くなるかな
     }
 

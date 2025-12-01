@@ -21,7 +21,7 @@ public class GamePresenter : IStartable, IDisposable
 
         // Model -> View
         _model.OnScoreChanged += score => _view.UpdateScore(score);
-        _model.OnConfettiRequested += () => _view.PlayConfetti();
+        // _model.OnConfettiRequested += () => _view.PlayConfetti(); // 紙吹雪演出
     }
 
     public void Dispose()

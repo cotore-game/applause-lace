@@ -34,7 +34,7 @@ public class GameFlowController : IStartable
         // チュートリアル
         await RunTutorialPhase();
 
-        // 3つのステージを順番に
+        // 全てのステージを順番に
         foreach (var stageData in _stageList)
         {
             // ステージ実行
@@ -50,7 +50,7 @@ public class GameFlowController : IStartable
 
     private async UniTask RunTutorialPhase()
     {
-        await _tutorial.PlayDialogue("これからゲームを始めます。クリックで拍手してください。");
+        await _tutorial.PlayDialogue("これからゲームを始めます。クリックで3回以上拍手してください。");
 
         var tutorialData = ScriptableObject.CreateInstance<StageData>();
         tutorialData.Duration = 5f; // 固定
@@ -58,11 +58,11 @@ public class GameFlowController : IStartable
         // チュートリアルは特殊なので別途制御してもいいが、今回は簡易化
         _model.StartGame(tutorialData);
         await UniTask.WaitUntil(() => _model.Score >= 3);
-        await _tutorial.PlayDialogue("いい感じです！");
+        await _tutorial.PlayDialogue("いい感じです！では本番ですよ～？");
         _model.Stop();
     }
 
-    // ステージ進行のコアロジック
+    // ステージ進行のコアロジック    
     private async UniTask RunStagePhase(StageData data)
     {
         _view.SetCharacter(data.CharacterImage);
@@ -70,8 +70,8 @@ public class GameFlowController : IStartable
 
         // 失敗か成功
         int resultType = await UniTask.WhenAny(
-            WaitRoundFailed(), // 失敗
-            WaitClearCondition() // 成功
+            WaitRoundFailed(),
+            WaitClearCondition()
         );
 
         _model.Stop(); // ゲームループ停止
@@ -97,6 +97,7 @@ public class GameFlowController : IStartable
     private async UniTask RunEndingPhase()
     {
         // 最終的な合計スコアなどを計算してもよい
+        await _tutorial.PlayDialogue("これでゲームは終わりです。");
         await _tutorial.PlayDialogue("私の働きも悪くなかったでしょう？");
 
         // エンディング中のクリック遊び用データ
@@ -125,8 +126,14 @@ public class GameFlowController : IStartable
         Action handler = () => source.TrySetResult();
 
         _model.OnRoundFailed += handler;
-        try { await source.Task; }
-        finally { _model.OnRoundFailed -= handler; }
+        try
+        {
+            await source.Task;
+        }
+        finally 
+        {
+            _model.OnRoundFailed -= handler;
+        }
     }
 
     // タイムアップしてから、クリックせずに数秒耐える
@@ -143,8 +150,14 @@ public class GameFlowController : IStartable
         };
 
         _model.OnHiddenTimeUp += timeUpHandler;
-        try { await source.Task; }
-        finally { _model.OnHiddenTimeUp -= timeUpHandler; }
+        try
+        {
+            await source.Task;
+        }
+        finally
+        {
+            _model.OnHiddenTimeUp -= timeUpHandler;
+        }
     }
 
     #endregion
