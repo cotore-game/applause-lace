@@ -30,6 +30,8 @@ public class ClapButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
         // ボタンを少し押し込む演出
         transform.DOScale(0.9f, 0.1f);
+
+        PlayEffects();
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -40,8 +42,8 @@ public class ClapButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         // ボタンを元に戻す
         transform.DOScale(1f, 0.1f);
 
-        // エフェクト再生
-        PlayEffects();
+        StopEffects();
+
     }
 
     private void PlayEffects()
@@ -54,5 +56,13 @@ public class ClapButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
         // ボタンにパンチ演出
         transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 5, 0.5f);
+    }
+
+    private void StopEffects()
+    {
+        if (confettiParticle != null)
+        {
+            confettiParticle.Stop();
+        }
     }
 }

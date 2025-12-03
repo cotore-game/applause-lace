@@ -10,14 +10,14 @@ public class GameFlowController : IStartable
     private readonly ClapGameModel _model;
     private readonly GameView _view;
     private readonly StageData[] _stageList;
-    private readonly TutorialService _tutorial;
+    private readonly DialogueSystem _tutorial;
 
     [Inject]
     public GameFlowController(
         ClapGameModel model,
         GameView view,
         StageData[] stageList,
-        TutorialService tutorial)
+        DialogueSystem tutorial)
     {
         _model = model;
         _view = view;

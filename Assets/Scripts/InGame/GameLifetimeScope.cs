@@ -25,6 +25,6 @@ public class GameLifetimeScope : LifetimeScope
         builder.RegisterEntryPoint<GameFlowController>();
 
         // 会話制御など
-        builder.Register<TutorialService>(Lifetime.Scoped);
+        builder.Register<DialogueSystem>(Lifetime.Scoped);
     }
 }
