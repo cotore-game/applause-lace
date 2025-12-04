@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3250916444961440665}
   - component: {fileID: 5425080438727366245}
   m_Layer: 5
-  m_Name: HappyParticle
+  m_Name: UIHappyParticle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
