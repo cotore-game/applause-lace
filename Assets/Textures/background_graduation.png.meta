@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b6069396bc516de4593735c534c5de2c
+guid: 1c387ab50ea5a5248b391f5fac5e818c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5823745685282135805
-    second: 302_20251203122808_0
+      213: -5911081011398373691
+    second: background_graduation_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -72,7 +72,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: 302_20251203122808_0
+      name: background_graduation_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 512
-        height: 512
+        width: 2560
+        height: 1440
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dfe947168d912d050800000000000000
-      internalID: 5823745685282135805
+      spriteID: 5ce0b0d632f97fda0800000000000000
+      internalID: -5911081011398373691
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      302_20251203122808_0: 5823745685282135805
+      background_graduation_0: -5911081011398373691
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
