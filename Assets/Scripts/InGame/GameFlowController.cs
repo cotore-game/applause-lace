@@ -62,9 +62,13 @@ public class GameFlowController : IStartable
 
         await _tutorial.PlayDialogue("これからゲームを始めます。クリックで3回以上拍手してください。");
 
+        await _view.ShowSpotlightOnButton(radius: 256f);
+
         // チュートリアルは特殊なので別途制御してもいいが、今回は簡易化
         _model.StartGame(tutorialData);
         await UniTask.WaitUntil(() => _model.Score >= 3);
+
+        await _view.HideSpotlight();
         await _tutorial.PlayDialogue("いい感じです！では本番ですよ～？");
         _model.Stop();
     }

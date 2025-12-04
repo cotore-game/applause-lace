@@ -1,6 +1,7 @@
 ﻿using VContainer;
 using VContainer.Unity;
 using System;
+using Cysharp.Threading.Tasks;
 
 public class GamePresenter : IStartable, IDisposable
 {
@@ -17,15 +18,46 @@ public class GamePresenter : IStartable, IDisposable
     public void Start()
     {
         // View -> Model
-        _view.OnClickAction = () => _model.Click();
+        _view.OnClapAction += HandleClap;
 
         // Model -> View
-        _model.OnScoreChanged += score => _view.UpdateScore(score);
-        // _model.OnConfettiRequested += () => _view.PlayConfetti(); // 紙吹雪演出
+        _model.OnScoreChanged += _view.UpdateScore;
+        _model.OnConfettiRequested += _view.PlayConfetti;
+        _model.OnFeverStarted += OnFeverStarted;
+        _model.OnHiddenTimeUp += OnTimeUp;
+        _model.OnRoundFailed += OnRoundFailed;
     }
 
     public void Dispose()
     {
-        _model.OnScoreChanged -= score => _view.UpdateScore(score);
+        _view.OnClapAction -= HandleClap;
+        _model.OnScoreChanged -= _view.UpdateScore;
+        _model.OnConfettiRequested -= _view.PlayConfetti;
+        _model.OnFeverStarted -= OnFeverStarted;
+        _model.OnHiddenTimeUp -= OnTimeUp;
+        _model.OnRoundFailed -= OnRoundFailed;
+    }
+
+    private void HandleClap()
+    {
+        _model.Click();
+    }
+
+    private async void OnFeverStarted()
+    {
+        await _view.ShowSpotlightOnCharacter(300f);
+    }
+
+    private async void OnTimeUp()
+    {
+        await _view.ShowSpotlightOnCharacter(256f);
+        await UniTask.Delay(2000);
+        await _view.HideSpotlight();
+    }
+
+    private async void OnRoundFailed()
+    {
+        _view.StopClapEffects();
+        await _view.HideSpotlight();
     }
 }

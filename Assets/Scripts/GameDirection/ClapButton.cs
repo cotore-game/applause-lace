@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using System;
 
 /// <summary>
 /// 拍手ボタン
@@ -13,56 +14,59 @@ public class ClapButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     [SerializeField] private Sprite handOpenSprite;
     [SerializeField] private Sprite handClosedSprite;
 
-    [Header("Effects")]
-    [SerializeField] private ParticleSystem confettiParticle;
+    // イベント通知
+    public event Action OnClapPressed;
+    public event Action OnClapReleased;
 
-    private Button _button;
+    private RectTransform _rectTransform;
+    private Vector3 _originalScale;
 
     private void Awake()
     {
-        _button = GetComponent<Button>();
+        _rectTransform = GetComponent<RectTransform>();
+        _originalScale = _rectTransform.localScale;
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        // 手を閉じる
-        handImage.sprite = handClosedSprite;
-
-        // ボタンを少し押し込む演出
-        transform.DOScale(0.9f, 0.1f);
-
-        PlayEffects();
+        SetHandClosed();
+        ScaleDown();
+        OnClapPressed?.Invoke();
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        // 手を開く
-        handImage.sprite = handOpenSprite;
-
-        // ボタンを元に戻す
-        transform.DOScale(1f, 0.1f);
-
-        StopEffects();
-
+        SetHandOpen();
+        ScaleUp();
+        OnClapReleased?.Invoke();
     }
 
-    private void PlayEffects()
+    private void SetHandClosed()
     {
-        // 紙吹雪
-        if (confettiParticle != null)
-        {
-            confettiParticle.Play();
-        }
-
-        // ボタンにパンチ演出
-        transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 5, 0.5f);
+        if (handImage != null && handClosedSprite != null)
+            handImage.sprite = handClosedSprite;
     }
 
-    private void StopEffects()
+    private void SetHandOpen()
     {
-        if (confettiParticle != null)
-        {
-            confettiParticle.Stop();
-        }
+        if (handImage != null && handOpenSprite != null)
+            handImage.sprite = handOpenSprite;
     }
+
+    private void ScaleDown()
+    {
+        _rectTransform.DOScale(_originalScale * 0.9f, 0.1f);
+    }
+
+    private void ScaleUp()
+    {
+        _rectTransform.DOScale(_originalScale, 0.1f);
+    }
+
+    public void PlayPunchAnimation()
+    {
+        _rectTransform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 5, 0.5f);
+    }
+
+    public RectTransform GetRectTransform() => _rectTransform;
 }

@@ -13,62 +13,82 @@ namespace GameDirection
     public class SpotlightOverlay : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private Image darkOverlay; // 暗くするオーバーレイ
-        [SerializeField] private RectTransform spotlightShape; // スポットライト形状
+        [SerializeField] private Image darkOverlay;
+        [SerializeField] private RectTransform spotlightShape;
+        [SerializeField] private SoftMask softMask;
+        [SerializeField] private Canvas targetCanvas; // Canvas参照
 
         [Header("Settings")]
-        [SerializeField] private float initialRadius = 2000f; // 初期半径
-        [SerializeField] private float targetRadius = 256f; // 焦点時の半径
+        [SerializeField] private float initialRadius = 2000f;
+        [SerializeField] private float targetRadius = 256f;
         [SerializeField] private float fadeInDuration = 0.8f;
-        [SerializeField] private float focusDuration = 0.6f; // 絞り込みアニメーション時間
+        [SerializeField] private float focusDuration = 0.6f;
+
         private CanvasGroup _canvasGroup;
+        private RectTransform _rootRectTransform;
 
         private void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
             if (_canvasGroup == null)
                 _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+            _rootRectTransform = GetComponent<RectTransform>();
+
+            // Canvasが未設定なら自動検索
+            if (targetCanvas == null)
+                targetCanvas = GetComponentInParent<Canvas>();
+
+            if (_rootRectTransform == null)
+                Debug.LogError("[SpotlightOverlay] RectTransform not found!");
+            if (targetCanvas == null)
+                Debug.LogError("[SpotlightOverlay] Parent Canvas not found!");
+
+            gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// RectTransformをターゲットにスポットライトを表示
+        /// </summary>
+        public async UniTask ShowAndFocusOnTarget(RectTransform target, float? finalRadius = null)
+        {
+            if (target == null) return;
+
+            // ターゲットのローカル座標を取得
+            Vector2 localPosition = ConvertToLocalPosition(target);
+            await ShowAndFocus(localPosition, finalRadius);
         }
 
         /// <summary>
         /// スポットライトを表示（全体から徐々に絞る演出）
         /// </summary>
-        /// <param name="targetPosition">焦点を当てる座標（RectTransformのローカル座標）</param>
-        /// <param name="finalRadius">最終的なスポットライトの半径</param>
         public async UniTask ShowAndFocus(Vector2 targetPosition, float? finalRadius = null)
         {
             float radius = finalRadius ?? targetRadius;
 
-            // 全画面を明るい状態からスタート
             gameObject.SetActive(true);
             _canvasGroup.alpha = 0;
 
-            // スポットライトは画面中央から大きくスタート
+            // 画面中央から大きくスタート
             spotlightShape.anchoredPosition = Vector2.zero;
             spotlightShape.sizeDelta = new Vector2(initialRadius * 2, initialRadius * 2);
 
             // オーバーレイをフェードイン
-            await _canvasGroup.DOFade(1f, fadeInDuration)
-                .SetEase(Ease.OutQuad)
-                .AwaitForComplete();
+            var tween1 = _canvasGroup.DOFade(1f, fadeInDuration).SetEase(Ease.OutQuad);
+            await UniTask.WaitUntil(() => !tween1.IsActive());
 
             // スポットライトを絞り込む
-            var moveTask = spotlightShape.DOAnchorPos(targetPosition, focusDuration)
-                .SetEase(Ease.InOutCubic)
-                .AwaitForComplete();
+            var tween2 = spotlightShape.DOAnchorPos(targetPosition, focusDuration)
+                .SetEase(Ease.InOutCubic);
 
-            var scaleTask = DOVirtual.Float(initialRadius, radius, focusDuration, value =>
+            var tween3 = DOVirtual.Float(initialRadius, radius, focusDuration, value =>
             {
                 spotlightShape.sizeDelta = new Vector2(value * 2, value * 2);
-            }).SetEase(Ease.InOutCubic)
-            .AwaitForComplete();
+            }).SetEase(Ease.InOutCubic);
 
-            await UniTask.WhenAll(moveTask, scaleTask);
+            await UniTask.WaitUntil(() => !tween2.IsActive() && !tween3.IsActive());
         }
 
-        /// <summary>
-        /// スポットライトを即座に表示（アニメーションなし）
-        /// </summary>
         public void ShowImmediate(Vector2 targetPosition, float? radius = null)
         {
             float r = radius ?? targetRadius;
@@ -80,64 +100,78 @@ namespace GameDirection
             spotlightShape.sizeDelta = new Vector2(r * 2, r * 2);
         }
 
-        /// <summary>
-        /// スポットライトを非表示
-        /// </summary>
         public async UniTask Hide(float duration = 0.3f)
         {
-            await _canvasGroup.DOFade(0f, duration)
-                .SetEase(Ease.InQuad)
-                .AwaitForComplete();
-
+            var tween = _canvasGroup.DOFade(0f, duration).SetEase(Ease.InQuad);
+            await UniTask.WaitUntil(() => !tween.IsActive());
             gameObject.SetActive(false);
         }
 
-        /// <summary>
-        /// スポットライト位置を移動
-        /// </summary>
         public async UniTask MoveTo(Vector2 targetPosition, float duration = 0.5f)
         {
-            await spotlightShape.DOAnchorPos(targetPosition, duration)
-                .SetEase(Ease.InOutQuad)
-                .AwaitForComplete();
+            var tween = spotlightShape.DOAnchorPos(targetPosition, duration)
+                .SetEase(Ease.InOutQuad);
+            await UniTask.WaitUntil(() => !tween.IsActive());
         }
 
-        /// <summary>
-        /// スポットライトサイズを変更（アニメーション）
-        /// </summary>
+        public async UniTask MoveToTarget(RectTransform target, float duration = 0.5f)
+        {
+            if (target == null) return;
+            Vector2 localPosition = ConvertToLocalPosition(target);
+            await MoveTo(localPosition, duration);
+        }
+
         public async UniTask SetRadius(float radius, float duration = 0.3f)
         {
-            await DOVirtual.Float(spotlightShape.sizeDelta.x / 2f, radius, duration, value =>
+            var tween = DOVirtual.Float(spotlightShape.sizeDelta.x / 2f, radius, duration, value =>
             {
                 spotlightShape.sizeDelta = new Vector2(value * 2, value * 2);
-            }).SetEase(Ease.InOutQuad)
-            .AwaitForComplete();
+            }).SetEase(Ease.InOutQuad);
+
+            await UniTask.WaitUntil(() => !tween.IsActive());
         }
 
-        /// <summary>
-        /// スポットライトサイズを即座に変更
-        /// </summary>
         public void SetRadiusImmediate(float radius)
         {
             spotlightShape.sizeDelta = new Vector2(radius * 2, radius * 2);
         }
 
-        /// <summary>
-        /// 位置とサイズを同時に変更
-        /// </summary>
         public async UniTask MoveAndResize(Vector2 targetPosition, float radius, float duration = 0.5f)
         {
-            var moveTask = spotlightShape.DOAnchorPos(targetPosition, duration)
-                .SetEase(Ease.InOutQuad)
-                .AwaitForComplete();
+            var tween1 = spotlightShape.DOAnchorPos(targetPosition, duration)
+                .SetEase(Ease.InOutQuad);
 
-            var resizeTask = DOVirtual.Float(spotlightShape.sizeDelta.x / 2f, radius, duration, value =>
+            var tween2 = DOVirtual.Float(spotlightShape.sizeDelta.x / 2f, radius, duration, value =>
             {
                 spotlightShape.sizeDelta = new Vector2(value * 2, value * 2);
-            }).SetEase(Ease.InOutQuad)
-            .AwaitForComplete();
+            }).SetEase(Ease.InOutQuad);
 
-            await UniTask.WhenAll(moveTask, resizeTask);
+            await UniTask.WaitUntil(() => !tween1.IsActive() && !tween2.IsActive());
+        }
+
+        /// <summary>
+        /// ターゲットのRectTransformをこのSpotlightOverlayのローカル座標に変換
+        /// </summary>
+        private Vector2 ConvertToLocalPosition(RectTransform target)
+        {
+            // ターゲットのワールド座標を取得
+            Vector3 worldPos = target.position;
+
+            // Overlayが属するCanvasのカメラを取得
+            Camera cam = targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : targetCanvas.worldCamera;
+
+            // ワールド座標 -> スクリーン座標
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, worldPos);
+
+            // スクリーン座標 -> SpotlightOverlay内のローカル座標
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                _rootRectTransform,
+                screenPoint,
+                cam,
+                out Vector2 localPoint
+            );
+
+            return localPoint;
         }
     }
 }
