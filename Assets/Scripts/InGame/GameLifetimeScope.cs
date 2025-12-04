@@ -1,6 +1,7 @@
 ﻿using VContainer;
 using VContainer.Unity;
 using UnityEngine;
+using GameDialogue;
 
 public class GameLifetimeScope : LifetimeScope
 {

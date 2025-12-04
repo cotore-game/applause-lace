@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System;
 using AssetManagement;
+using GameDialogue;
 
 public class GameFlowController : IStartable
 {

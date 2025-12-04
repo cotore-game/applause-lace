@@ -45,14 +45,14 @@ public class GamePresenter : IStartable, IDisposable
 
     private async void OnFeverStarted()
     {
-        await _view.ShowSpotlightOnCharacter(300f);
+        await UniTask.Yield();
+        // フィーバー開始時の演出
     }
 
     private async void OnTimeUp()
     {
-        await _view.ShowSpotlightOnCharacter(256f);
-        await UniTask.Delay(2000);
-        await _view.HideSpotlight();
+        await UniTask.Yield();
+        // タイムアップ時の演出
     }
 
     private async void OnRoundFailed()
