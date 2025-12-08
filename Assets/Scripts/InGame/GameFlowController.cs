@@ -52,18 +52,12 @@ public class GameFlowController : IStartable
 
     private async UniTask RunTutorialPhase()
     {
-        var loader = ResourcesAssetLoader.Instance;
-        var sprite = await loader.LoadAsync<Sprite>(InGameAssetPath.TestA, "tmp");
-
-
         var tutorialData = ScriptableObject.CreateInstance<StageData>();
         tutorialData.Duration = 5f; // 固定
 
-        _view.SetCharacter(sprite);
-
         await _tutorial.PlayDialogue("これからゲームを始めます。クリックで3回以上拍手してください。");
 
-        await _view.ShowSpotlightOnButton(radius: 256f);
+        await _view.ShowSpotlightOnButton(radius: 230f);
 
         // チュートリアルは特殊なので別途制御してもいいが、今回は簡易化
         _model.StartGame(tutorialData);
