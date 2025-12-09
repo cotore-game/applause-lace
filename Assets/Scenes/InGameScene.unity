@@ -500,17 +500,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &675578752 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 345998623889208906, guid: 9190abb3c7d5a64489ab315013ed897e, type: 3}
-  m_PrefabInstance: {fileID: 7355847029374816769}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf8a60eb6fa9fa34dbc2686cacf60198, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &708121123 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6625383612108516113, guid: b4f8e2f81a5ad1147ab53a751da6c43e, type: 3}
@@ -1951,8 +1940,8 @@ MonoBehaviour:
     TypeName: 
   autoRun: 1
   autoInjectGameObjects: []
-  textViewPrefab: {fileID: 3398579334361740186, guid: 583f3dae3f454ad4b8daa7a8d39f17bc, type: 3}
-  characterViewPrefab: {fileID: 675578752}
+  textView: {fileID: 0}
+  characterView: {fileID: 0}
   characterContainer: {fileID: 0}
   enableDebugLog: 1
   defaultScenarioData: {fileID: 0}

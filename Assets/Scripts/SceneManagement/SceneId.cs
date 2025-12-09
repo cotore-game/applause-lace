@@ -10,22 +10,8 @@
     /// </remarks>
     public enum SceneId
     {
-        /// <summary>
-        /// テスト用シーンA
-        /// </summary>
-        TestA,
-
-        /// <summary>
-        /// テスト用シーンB
-        /// </summary>
-        TestB,
         Title,
-        Map,
-        QuickClick,
-        BlackJack,
-        Quiz,
-        Typing,
-        GameOver,
-        ADV
+        InGame,
+        Result
     }
 }

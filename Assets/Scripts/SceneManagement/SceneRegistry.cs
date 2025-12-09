@@ -31,16 +31,9 @@ namespace SceneManagement
             // ========================================
             // ここにシーンのマッピングを定義
             // ========================================
-            // Register(SceneId.TestA, "TestA");
-            // Register(SceneId.TestB, "TestB");
             Register(SceneId.Title, "TitleScene");
-            Register(SceneId.Map, "MapScene");
-            Register(SceneId.QuickClick, "QuickClick");
-            Register(SceneId.BlackJack, "BlackJack");
-            Register(SceneId.Quiz, "QuizGame");
-            Register(SceneId.Typing, "typinggame");
-            Register(SceneId.GameOver, "GameOver");
-            Register(SceneId.ADV, "ADVPart");
+            Register(SceneId.InGame, "InGameScene");
+            Register(SceneId.Result, "ResultScene");
 
             _isInitialized = true;
             Debug.Log("[SceneRegistry] Initialized successfully.");
