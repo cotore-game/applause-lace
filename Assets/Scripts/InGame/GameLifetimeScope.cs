@@ -23,7 +23,7 @@ public class GameLifetimeScope : LifetimeScope
         builder.RegisterEntryPoint<GamePresenter>();
 
         // Flow
-        builder.RegisterEntryPoint<GameFlowController>();
+        builder.RegisterEntryPoint<GamePlayController>();
 
         // 会話制御など
         builder.Register<DialogueSystem>(Lifetime.Scoped);

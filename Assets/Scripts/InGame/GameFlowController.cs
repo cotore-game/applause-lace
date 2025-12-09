@@ -71,7 +71,6 @@ public class GamePlayController : IStartable
     // ステージ進行のコアロジック    
     private async UniTask RunStagePhase(StageData data)
     {
-        _view.SetCharacter(data.CharacterImage);
         _model.StartGame(data);
 
         // 失敗か成功
