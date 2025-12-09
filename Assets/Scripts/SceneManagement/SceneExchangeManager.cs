@@ -15,17 +15,17 @@ namespace SceneManagement
         private readonly Dictionary<Type, ISceneExchangeData> _dataStorage = new Dictionary<Type, ISceneExchangeData>();
 
         /// <summary>
-        /// シーン遷移用のデータを格納します（内部使用）。
+        /// シーン遷移用のデータを格納します。
         /// 同じ型のデータが既に格納されている場合は上書きされます。
         /// </summary>
-        internal void StoreData<TData>(TData data) where TData : ISceneExchangeData
+        internal void StoreData(ISceneExchangeData data)
         {
             if (data == null)
             {
                 throw new ArgumentNullException(nameof(data), "Cannot store null data.");
             }
 
-            Type dataType = typeof(TData);
+            Type dataType = data.GetType();
             _dataStorage[dataType] = data;
 
             Debug.Log($"[SceneExchangeManager] Data stored for type: {dataType.Name}");
@@ -35,6 +35,9 @@ namespace SceneManagement
         /// 格納されたデータを取得し、ストレージから削除します。
         /// データが存在しない場合はdefault(TData)を返します。
         /// </summary>
+        /// <remarks>
+        /// 取得に関しては、受け取る側が型を特定して要求する必要があるためジェネリックのままとしています。
+        /// </remarks>
         /// <typeparam name="TData">取得するデータの型</typeparam>
         /// <returns>格納されていたデータ。データが存在しない場合はdefault(TData)</returns>
         public TData GetData<TData>() where TData : class, ISceneExchangeData
@@ -54,10 +57,7 @@ namespace SceneManagement
 
         /// <summary>
         /// 格納されたデータを取得しますが、ストレージからは削除しません。
-        /// データの確認や複数回の取得が必要な場合に使用します。
         /// </summary>
-        /// <typeparam name="TData">取得するデータの型</typeparam>
-        /// <returns>格納されていたデータ。データが存在しない場合はdefault(TData)</returns>
         public TData PeekData<TData>() where TData : class, ISceneExchangeData
         {
             Type dataType = typeof(TData);
@@ -71,23 +71,28 @@ namespace SceneManagement
         }
 
         /// <summary>
-        /// 指定した型のデータがストレージに存在するかを確認します。
+        /// 指定したデータの型がストレージに存在するかを確認します。
+        /// インスタンスを渡すことで、その型に基づいてチェックを行います。
         /// </summary>
-        /// <typeparam name="TData">確認するデータの型</typeparam>
-        /// <returns>データが存在する場合はtrue、存在しない場合はfalse</returns>
-        public bool HasData<TData>() where TData : ISceneExchangeData
+        /// <param name="data">確認したい型のデータインスタンス（中身ではなく型情報を使用します）</param>
+        /// <returns>データが存在する場合はtrue</returns>
+        public bool HasData(ISceneExchangeData data)
         {
-            return _dataStorage.ContainsKey(typeof(TData));
+            if (data == null) return false;
+            return _dataStorage.ContainsKey(data.GetType());
         }
 
         /// <summary>
-        /// 指定した型のデータをストレージから削除します。
+        /// 指定したデータと同じ型のデータをストレージから削除します。
+        /// エラー時など、手元にあるデータインスタンスを使って削除したい場合に有効です。
         /// </summary>
-        /// <typeparam name="TData">削除するデータの型</typeparam>
-        /// <returns>データが存在して削除された場合はtrue、存在しない場合はfalse</returns>
-        public bool ClearData<TData>() where TData : ISceneExchangeData
+        /// <param name="data">削除したい型のデータインスタンス（このインスタンスの型をキーとして削除します）</param>
+        /// <returns>データが存在して削除された場合はtrue</returns>
+        public bool ClearData(ISceneExchangeData data)
         {
-            Type dataType = typeof(TData);
+            if (data == null) return false;
+
+            Type dataType = data.GetType();
             bool removed = _dataStorage.Remove(dataType);
 
             if (removed)

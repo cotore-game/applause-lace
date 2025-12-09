@@ -1,7 +1,7 @@
 ﻿namespace SceneManagement
 {
     /// <summary>
-    /// シーン間でやり取りするデータクラスが実装するインターフェース。
+    /// シーン間でやり取りするデータクラスが実装するマーカーインターフェース。
     /// </summary>
     /// <remarks>
     /// 使用例:
@@ -15,9 +15,5 @@
     /// </remarks>
     public interface ISceneExchangeData
     {
-        /// <summary>
-        /// この遷移データが対応するシーンIDを取得します。
-        /// </summary>
-        SceneId TargetSceneId { get; }
     }
 }

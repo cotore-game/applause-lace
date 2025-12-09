@@ -86,21 +86,11 @@ namespace SceneManagement
         /// <param name="sceneId">遷移先のシーンID</param>
         /// <param name="data">遷移先に渡すデータ</param>
         /// <param name="mode">読み込みモード（Single/Additive）</param>
-        public void TransitionTo<TData>(SceneId sceneId, TData data, LoadSceneMode mode = LoadSceneMode.Single)
-            where TData : ISceneExchangeData
+        public void TransitionTo(SceneId sceneId, ISceneExchangeData data, LoadSceneMode mode = LoadSceneMode.Single)
         {
             if (data == null)
             {
                 throw new ArgumentNullException(nameof(data), "Transition data cannot be null.");
-            }
-
-            // データのTargetSceneIdと引数のsceneIdが一致するか検証
-            if (!data.TargetSceneId.Equals(sceneId))
-            {
-                throw new InvalidOperationException(
-                    $"Scene ID mismatch: TransitionTo called with SceneId.{sceneId}, " +
-                    $"but data.TargetSceneId is SceneId.{data.TargetSceneId}. " +
-                    $"Data type: {typeof(TData).Name}");
             }
 
             string sceneName = SceneRegistry.GetSceneName(sceneId);
@@ -110,7 +100,7 @@ namespace SceneManagement
                 return;
             }
 
-            string dataTypeName = typeof(TData).Name;
+            string dataTypeName = data.GetType().Name;
             Debug.Log($"[SceneTransitioner] Transition to '{sceneId}' ({sceneName}) with '{dataTypeName}' (Sync, {mode})");
 
             // データをマネージャーに格納
@@ -127,7 +117,7 @@ namespace SceneManagement
             catch (Exception ex)
             {
                 Debug.LogError($"[SceneTransitioner] Failed to load scene '{sceneName}': {ex.Message}");
-                SceneExchangeManager.Instance.ClearData<TData>();
+                SceneExchangeManager.Instance.ClearData(data);
                 _currentTransitionSceneId = null;
             }
         }
@@ -188,15 +178,6 @@ namespace SceneManagement
                 throw new ArgumentNullException(nameof(data), "Transition data cannot be null.");
             }
 
-            // データのTargetSceneIdと引数のsceneIdが一致するか検証
-            if (!data.TargetSceneId.Equals(sceneId))
-            {
-                throw new InvalidOperationException(
-                    $"Scene ID mismatch: TransitionToAsync called with SceneId.{sceneId}, " +
-                    $"but data.TargetSceneId is SceneId.{data.TargetSceneId}. " +
-                    $"Data type: {typeof(TData).Name}");
-            }
-
             string sceneName = SceneRegistry.GetSceneName(sceneId);
             if (string.IsNullOrEmpty(sceneName))
             {
@@ -221,7 +202,7 @@ namespace SceneManagement
             catch (Exception ex)
             {
                 Debug.LogError($"[SceneTransitioner] Failed to load scene '{sceneName}': {ex.Message}");
-                SceneExchangeManager.Instance.ClearData<TData>();
+                SceneExchangeManager.Instance.ClearData(data);
                 _currentTransitionSceneId = null;
             }
         }

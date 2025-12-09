@@ -7,9 +7,5 @@ namespace SceneManagement
     /// </summary>
     public abstract class ScriptableSceneData : ScriptableObject, ISceneExchangeData
     {
-        [SerializeField, Tooltip("このデータを使用する対象のシーンID")]
-        private SceneId _targetSceneId;
-
-        public SceneId TargetSceneId => _targetSceneId;
     }
 }
