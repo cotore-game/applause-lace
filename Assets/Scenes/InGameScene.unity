@@ -322,7 +322,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: 300}
-  m_SizeDelta: {x: 280, y: 280}
+  m_SizeDelta: {x: 512, y: 512}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &492446347
 MonoBehaviour:
@@ -388,7 +388,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5e388814b3382564b889bbb57c32b88f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e01da9183b7a71041a5683e09d8f813b, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -419,8 +419,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handImage: {fileID: 492446348}
-  handOpenSprite: {fileID: 21300000, guid: b6069396bc516de4593735c534c5de2c, type: 3}
-  handClosedSprite: {fileID: 21300000, guid: 5e388814b3382564b889bbb57c32b88f, type: 3}
+  handOpenSprite: {fileID: 21300000, guid: e01da9183b7a71041a5683e09d8f813b, type: 3}
+  handClosedSprite: {fileID: 21300000, guid: 6bb3a408be5fd9242aa8f4530665cb96, type: 3}
 --- !u!1 &518969997
 GameObject:
   m_ObjectHideFlags: 0
