@@ -19,6 +19,7 @@ namespace GameDirection
         [SerializeField] private Canvas targetCanvas; // Canvas参照
 
         [Header("Settings")]
+        [SerializeField] private Color overlayColor = new Color(0f, 0f, 0f, 0.8f);
         [SerializeField] private float initialRadius = 2000f;
         [SerializeField] private float targetRadius = 256f;
         [SerializeField] private float fadeInDuration = 0.8f;
@@ -44,7 +45,22 @@ namespace GameDirection
             if (targetCanvas == null)
                 Debug.LogError("[SpotlightOverlay] Parent Canvas not found!");
 
+            // オーバーレイ色を設定
+            if (darkOverlay != null)
+            {
+                darkOverlay.color = overlayColor;
+            }
+
             gameObject.SetActive(false);
+        }
+
+        public void SetOverlayColor(Color color)
+        {
+            overlayColor = color;
+            if (darkOverlay != null)
+            {
+                darkOverlay.color = overlayColor;
+            }
         }
 
         /// <summary>
