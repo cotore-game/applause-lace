@@ -11,107 +11,67 @@ namespace ADV.Commands
 {
     /// <summary>
     /// キャラクター表示コマンド
-    /// Arg1: キャラ名, Arg2: 表情, Arg3: フェード時間
-    /// 連続する複数のCharacterコマンドは同時実行される（バッチ処理）
+    /// Arg1: キャラ名 (Graduate, Host, Pianist, Scientist)
+    /// Arg2: 表情名 (ファイル名)
+    /// Arg3: イージング使用 (0=即座, 1=イージング, 省略時=1)
     /// </summary>
     public class CharacterCommand : CommandBase
     {
         private readonly CharacterPresenter _characterPresenter;
 
-        public CharacterCommand(CharacterPresenter characterPresenter)
-        {
-            _characterPresenter = characterPresenter ?? throw new ArgumentNullException(nameof(characterPresenter)); ;
-        }
-
         // 非待機型コマンド（演出系）
         public override bool ShouldEngineAwait => false;
 
         /// <summary>
-        /// このコマンドはバッチ処理をサポートする
+        /// コンストラクタインジェクション
         /// </summary>
-        public override bool CanBatchProcess => true;
-
-        /// <summary>
-        /// 単一行実行
-        /// </summary>
-        public override async UniTask ExecuteAsync(LineData<ScenarioFields> lineData, CancellableTask cancellable)
+        public CharacterCommand(CharacterPresenter characterPresenter)
         {
-            await UniTask.Yield();
-            Debug.LogWarning("[CharacterCommand] Should be executed via batch processing in AdvScenarioExecutor");
+            _characterPresenter = characterPresenter ?? throw new ArgumentNullException(nameof(characterPresenter));
         }
 
-        /// <summary>
-        /// バッチ処理の実行ロジック
-        /// </summary>
-        public override async UniTask ExecuteBatchAsync(List<LineData<ScenarioFields>> batchLineData, CancellableTask cancellable)
+        public override async UniTask ExecuteAsync(LineData<ScenarioFields> lineData, CancellableTask cancellable)
         {
-            if (_characterPresenter == null)
+            // パラメータ取得
+            string characterName = lineData.GetOrDefault<string>(ScenarioFields.Arg1, null);
+            string expression = lineData.GetOrDefault<string>(ScenarioFields.Arg2, null);
+            int useEasingInt = lineData.GetOrDefault<int>(ScenarioFields.Arg3, 1);
+            bool useEasing = useEasingInt != 0;
+
+            if (string.IsNullOrWhiteSpace(characterName) || string.IsNullOrWhiteSpace(expression))
             {
-                Debug.LogError("[CharacterCommand] CharacterPresenter is null");
+                Debug.LogWarning("[CharacterCommand] Character name or expression is empty");
                 return;
             }
 
-            // 全キャラクターデータを収集
-            var allCharacters = new List<CharacterDisplayData>();
-            foreach (var lineData in batchLineData)
-            {
-                var charInfo = ParseCharacterCommandData(lineData);
-                if (charInfo != null)
-                {
-                    allCharacters.Add(charInfo);
-                }
-            }
-
-            if (allCharacters.Count > 0)
-            {
-                // Presenterにバッチ実行を依頼
-                await _characterPresenter.ShowCharacters(allCharacters, cancellable.Token);
-            }
-            else
-            {
-                // データが空でも、以前のキャラをクリアするなどのために空リストで呼ぶ
-                await _characterPresenter.ShowCharacters(new List<CharacterDisplayData>(), cancellable.Token);
-            }
+            // CancellableTaskからCancellationTokenを取得
+            await _characterPresenter.ShowCharacter(
+                characterName,
+                expression,
+                useEasing,
+                cancellable.Token
+            );
         }
 
-        /// <summary>
-        /// バッチ全体を待機すべきか判断する
-        /// </summary>
-        public override bool ShouldBatchAwait(List<LineData<ScenarioFields>> batchLineData)
+        public override bool Validate(LineData<ScenarioFields> lineData, out string errorMessage)
         {
-            // デフォルトは待機
-            // バッチ内に一つでもfalseがあれば false になる
-            foreach (var lineData in batchLineData)
-            {
-                string waitFlag = lineData.GetOrDefault<string>(ScenarioFields.WaitType, "true");
-                if (waitFlag.Equals("nowait", StringComparison.OrdinalIgnoreCase))
-                {
-                    return false; // 待機しない
-                }
-            }
-            return true; // バッチ全体を待機する
-        }
+            errorMessage = null;
 
-        /// <summary>
-        /// Characterコマンドからキャラクターデータをパース
-        /// </summary>
-        private CharacterDisplayData ParseCharacterCommandData(LineData<ScenarioFields> lineData)
-        {
-            string name = lineData.GetOrDefault<string>(ScenarioFields.Arg1, null);
-            string expression = lineData.GetOrDefault<string>(ScenarioFields.Arg2, null);
-            float fade = lineData.GetOrDefault<float>(ScenarioFields.Arg3, 0.5f);
-
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(expression))
+            var characterName = lineData.GetOrDefault<string>(ScenarioFields.Arg1, null);
+            if (string.IsNullOrWhiteSpace(characterName))
             {
-                return null;
+                errorMessage = "Character command requires character name in Arg1";
+                return false;
             }
 
-            return new CharacterDisplayData
+            var expression = lineData.GetOrDefault<string>(ScenarioFields.Arg2, null);
+            if (string.IsNullOrWhiteSpace(expression))
             {
-                Name = name.Trim(),
-                Expression = expression.Trim(),
-                FadeTime = fade
-            };
+                errorMessage = "Character command requires expression in Arg2";
+                return false;
+            }
+
+            return true;
         }
     }
 }

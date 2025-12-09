@@ -8,7 +8,8 @@ using System;
 namespace ADV.Commands
 {
     /// <summary>
-    /// 表示されている全てのキャラクターを非表示（フェードアウト）させるコマンド
+    /// キャラクターを非表示にさせるコマンド
+    /// Arg1: イージング使用 (0=即座, 1=イージング, 省略時=1)
     /// </summary>
     public class HideCharacterCommand : CommandBase
     {
@@ -27,13 +28,15 @@ namespace ADV.Commands
 
         public override async UniTask ExecuteAsync(LineData<ScenarioFields> lineData, CancellableTask cancellable)
         {
-            // CharacterPresenterのClearAllを呼ぶ
-            await _characterPresenter.ClearAll(cancellable.Token);
+            int useEasingInt = lineData.GetOrDefault<int>(ScenarioFields.Arg1, 1);
+            bool useEasing = useEasingInt != 0;
+
+            await _characterPresenter.HideCharacter(useEasing, cancellable.Token);
         }
 
         public override bool Validate(LineData<ScenarioFields> lineData, out string errorMessage)
         {
-            // このコマンドに引数は不要
+            // このコマンドに必須引数はなし
             errorMessage = null;
             return true;
         }

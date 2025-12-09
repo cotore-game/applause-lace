@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using Coffee.UIExtensions;
 using GameDirection;
@@ -8,7 +7,7 @@ using Cysharp.Threading.Tasks;
 public class GameView : MonoBehaviour
 {
     [Header("UI Elements")]
-    [SerializeField] private Image characterImage;
+    [SerializeField] private GameObject ADVContainer;
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private ClapButton clapButton;
 
@@ -45,11 +44,6 @@ public class GameView : MonoBehaviour
     private void HandleClapReleased()
     {
         // リリース時の処理
-    }
-
-    public void SetCharacter(Sprite sprite)
-    {
-        characterImage.sprite = sprite;
     }
 
     public void UpdateScore(int score)
@@ -95,15 +89,6 @@ public class GameView : MonoBehaviour
         }
 
         await spotlightOverlay.ShowAndFocusOnTarget(buttonRect, radius);
-    }
-
-    /// <summary>
-    /// スポットライトを表示してキャラクターに焦点を当てる
-    /// </summary>
-    public async UniTask ShowSpotlightOnCharacter(float radius = 256f)
-    {
-        if (spotlightOverlay == null) return;
-        await spotlightOverlay.ShowAndFocusOnTarget(characterImage.rectTransform, radius);
     }
 
     public async UniTask HideSpotlight()

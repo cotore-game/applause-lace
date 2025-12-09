@@ -6,7 +6,7 @@ using System;
 using AssetManagement;
 using GameDialogue;
 
-public class GameFlowController : IStartable
+public class GamePlayController : IStartable
 {
     private readonly ClapGameModel _model;
     private readonly GameView _view;
@@ -14,7 +14,7 @@ public class GameFlowController : IStartable
     private readonly DialogueSystem _tutorial;
 
     [Inject]
-    public GameFlowController(
+    public GamePlayController(
         ClapGameModel model,
         GameView view,
         StageData[] stageList,

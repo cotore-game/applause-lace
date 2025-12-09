@@ -4,13 +4,20 @@ public class PathInstaller : IAssetPathInstaller
 {
     public void Install(IPathRegister pathRegister)
     {
-        pathRegister.Register(InGameAssetPath.TestA, "TestA");
-        pathRegister.Register(InGameAssetPath.TestB, "TestA/TestB");
+        pathRegister.Register(InGameAssetPath.Graduate, "Graduate");
+        pathRegister.Register(InGameAssetPath.Host, "Host");
+        pathRegister.Register(InGameAssetPath.Pianist, "Pianist");
+        pathRegister.Register(InGameAssetPath.Scientist, "Scientist");
     }
 }
 
+/// <summary>
+/// インゲームアセットのパス定義
+/// </summary>
 public enum InGameAssetPath
 {
-    TestA,
-    TestB,
+    Graduate,
+    Host,
+    Pianist,
+    Scientist
 }

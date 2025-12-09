@@ -1,182 +1,173 @@
 ﻿using UnityEngine;
 using Cysharp.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 using System;
 using System.Threading;
+using AssetManagement;
 
 namespace ADV.Presentation
 {
     /// <summary>
-    /// キャラクター表示全体を管理するプレゼンター
+    /// 単体キャラクター立ち絵を管理するプレゼンター
+    /// ResourcesAssetLoaderを使用してスプライトをロード
     /// </summary>
     public class CharacterPresenter : IDisposable
     {
-        private readonly Transform _characterContainer;
-        private readonly CharacterView _characterPrefab;
-
-        // アクティブなキャラクター
-        private readonly Dictionary<string, CharacterView> _activeCharacters = new();
-
-        // スプライトキャッシュ
-        private readonly Dictionary<string, Sprite> _spriteCache = new();
+        private readonly CharacterView _characterView;
+        private readonly ResourcesAssetLoader _assetLoader;
 
         private CancellationTokenSource _cts;
-        private const float DEFAULT_FADE_DURATION = 0.5f;
+        private const float DEFAULT_EASE_DURATION = 0.5f;
 
-        public CharacterPresenter(Transform container, CharacterView prefab)
+        // 現在表示中のキャラクター情報
+        private string _currentCharacterName;
+        private string _currentExpression;
+
+        public CharacterPresenter(CharacterView characterView)
         {
-            _characterContainer = container;
-            _characterPrefab = prefab;
+            _characterView = characterView ?? throw new ArgumentNullException(nameof(characterView));
+            _assetLoader = ResourcesAssetLoader.Instance;
             _cts = new CancellationTokenSource();
+
+            // 初期状態は非表示
+            _characterView.HideImmediate();
         }
 
         /// <summary>
-        /// 複数キャラクターを表示
+        /// キャラクターを表示（イージングイン）
         /// </summary>
-        public async UniTask ShowCharacters(
-            List<CharacterDisplayData> characters,
+        /// <param name="characterName">Graduate, Host, Pianist, Scientist のいずれか</param>
+        /// <param name="expression">表情名（ファイル名）</param>
+        /// <param name="useEasing">イージング使用するか（falseの場合は即座に表示）</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
+        public async UniTask ShowCharacter(
+            string characterName,
+            string expression,
+            bool useEasing = true,
             CancellationToken cancellationToken = default)
         {
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
             var token = linkedCts.Token;
 
-            // 現在と新規のキーセット
-            var oldKeys = _activeCharacters.Keys.ToHashSet();
-            var newKeys = characters
-                .Select(c => $"{c.Name}_{c.Expression}")
-                .ToHashSet();
-
-            var toRemove = oldKeys.Except(newKeys).ToList();
-            var toKeep = oldKeys.Intersect(newKeys).ToList();
-
-            // フェードアウト＆削除
-            var fadeOutTasks = toRemove.Select(key =>
+            // アセットパスのEnum取得
+            if (!TryParseCharacterName(characterName, out var assetPath))
             {
-                if (_activeCharacters.TryGetValue(key, out var view))
-                {
-                    return view.FadeOut(DEFAULT_FADE_DURATION, token);
-                }
-                return UniTask.CompletedTask;
-            }).ToList();
-
-            await UniTask.WhenAll(fadeOutTasks);
-
-            foreach (var key in toRemove)
-            {
-                if (_activeCharacters.TryGetValue(key, out var view))
-                {
-                    UnityEngine.Object.Destroy(view.gameObject);
-                    _activeCharacters.Remove(key);
-                }
+                Debug.LogError($"[CharacterPresenter] Invalid character name: {characterName}");
+                return;
             }
 
-            // 位置計算（n分割）
-            int count = characters.Count;
-            float spacing = 1920f / (count + 1);
-            float startX = -1920f / 2 + spacing;
-
-            var fadeInTasks = new List<UniTask>();
-            var newActiveChars = new Dictionary<string, CharacterView>();
-
-            for (int i = 0; i < characters.Count; i++)
-            {
-                var charData = characters[i];
-                string key = $"{charData.Name}_{charData.Expression}";
-                Vector3 targetPos = new Vector3(startX + i * spacing, 0, 0);
-
-                if (toKeep.Contains(key) && _activeCharacters.TryGetValue(key, out var existingView))
-                {
-                    // 既存キャラは位置更新のみ
-                    fadeInTasks.Add(existingView.MoveTo(targetPos, DEFAULT_FADE_DURATION * 2, token));
-                    newActiveChars[key] = existingView;
-                }
-                else
-                {
-                    // 新規キャラ生成
-                    var sprite = LoadSprite(charData.Name, charData.Expression);
-
-                    if (sprite == null)
-                    {
-                        Debug.LogError($"[CharacterPresenter] Failed to load sprite: {charData.Name}_{charData.Expression}");
-                        continue;
-                    }
-
-                    var newView = UnityEngine.Object.Instantiate(_characterPrefab, _characterContainer);
-                    newView.transform.localPosition = targetPos;
-                    newView.SetSprite(sprite);
-                    newView.SetAlpha(0f);
-
-                    newActiveChars[key] = newView;
-                    fadeInTasks.Add(newView.FadeIn(charData.FadeTime, token));
-                }
-            }
-
-            _activeCharacters.Clear();
-            foreach (var kvp in newActiveChars)
-            {
-                _activeCharacters[kvp.Key] = kvp.Value;
-            }
-
-            await UniTask.WhenAll(fadeInTasks);
-        }
-
-        /// <summary>
-        /// 全キャラクターをクリア
-        /// </summary>
-        public async UniTask ClearAll(CancellationToken cancellationToken = default)
-        {
-            await ShowCharacters(new List<CharacterDisplayData>(), cancellationToken);
-        }
-
-        /// <summary>
-        /// Resourcesからスプライトをロード
-        /// パス例: "Characters/Aoi/smile" または "Characters/Taro/neutral"
-        /// </summary>
-        private Sprite LoadSprite(string characterName, string expression)
-        {
-            if (string.IsNullOrEmpty(expression))
-            {
-                Debug.LogWarning($"[CharacterPresenter] Expression is empty for {characterName}");
-                return null;
-            }
-
-            string resourcePath = $"Characters/{characterName}/{expression}";
-
-            // キャッシュチェック
-            if (_spriteCache.TryGetValue(resourcePath, out var cachedSprite))
-            {
-                return cachedSprite;
-            }
-
-            // Resourcesからロード
-            var sprite = Resources.Load<Sprite>(resourcePath);
+            // スプライトをロード
+            var sprite = await _assetLoader.LoadAsync<Sprite>(assetPath, expression);
 
             if (sprite == null)
             {
-                Debug.LogWarning($"[CharacterPresenter] Sprite not found: {resourcePath}");
-                return null;
+                Debug.LogError($"[CharacterPresenter] Failed to load sprite: {characterName}/{expression}");
+                return;
             }
 
-            // キャッシュに保存
-            _spriteCache[resourcePath] = sprite;
-            return sprite;
+            // スプライトを設定
+            _characterView.SetSprite(sprite);
+
+            // 現在の情報を更新
+            _currentCharacterName = characterName;
+            _currentExpression = expression;
+
+            // イージングイン
+            if (useEasing)
+            {
+                await _characterView.EaseIn(DEFAULT_EASE_DURATION, token);
+            }
+            else
+            {
+                _characterView.ShowImmediate();
+            }
         }
 
         /// <summary>
-        /// キャッシュクリア
+        /// 表情を切り替え（キャラクターは同じ）
+        /// </summary>
+        /// <param name="expression">新しい表情名</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
+        public async UniTask ChangeExpression(
+            string expression,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(_currentCharacterName))
+            {
+                Debug.LogWarning("[CharacterPresenter] No character is currently displayed");
+                return;
+            }
+
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
+            var token = linkedCts.Token;
+
+            // アセットパスのEnum取得
+            if (!TryParseCharacterName(_currentCharacterName, out var assetPath))
+            {
+                Debug.LogError($"[CharacterPresenter] Invalid character name: {_currentCharacterName}");
+                return;
+            }
+
+            // スプライトをロード
+            var sprite = await _assetLoader.LoadAsync<Sprite>(assetPath, expression);
+
+            if (sprite == null)
+            {
+                Debug.LogError($"[CharacterPresenter] Failed to load sprite: {_currentCharacterName}/{expression}");
+                return;
+            }
+
+            // スプライトを切り替え（即座に）
+            _characterView.SetSprite(sprite);
+            _currentExpression = expression;
+        }
+
+        /// <summary>
+        /// キャラクターを非表示（イージングアウト）
+        /// </summary>
+        /// <param name="useEasing">イージング使用するか（falseの場合は即座に非表示）</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
+        public async UniTask HideCharacter(
+            bool useEasing = true,
+            CancellationToken cancellationToken = default)
+        {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
+            var token = linkedCts.Token;
+
+            if (useEasing)
+            {
+                await _characterView.EaseOut(DEFAULT_EASE_DURATION, token);
+            }
+            else
+            {
+                _characterView.HideImmediate();
+            }
+
+            // 現在の情報をクリア
+            _currentCharacterName = null;
+            _currentExpression = null;
+        }
+
+        /// <summary>
+        /// 文字列からInGameAssetPathへ変換
+        /// </summary>
+        private bool TryParseCharacterName(string characterName, out InGameAssetPath assetPath)
+        {
+            return Enum.TryParse(characterName, true, out assetPath);
+        }
+
+        /// <summary>
+        /// キャッシュクリア（AssetLoaderのキャッシュをクリア）
         /// </summary>
         public void ClearCache()
         {
-            _spriteCache.Clear();
-            Debug.Log("[CharacterPresenter] Sprite cache cleared");
+            _assetLoader.ClearCache();
+            Debug.Log("[CharacterPresenter] Asset cache cleared");
         }
 
         public void Dispose()
         {
             _cts?.Cancel();
             _cts?.Dispose();
-            ClearCache();
         }
     }
 }
