@@ -38,9 +38,6 @@ namespace ADV.System
             // SceneTransitionerの登録
             builder.RegisterInstance(SceneTransitioner.Instance);
 
-            // CommandDependenciesの登録
-            builder.Register<CommandDependencies>(Lifetime.Scoped);
-
             // CommandFactoryの登録
             builder.Register<CommandFactory>(Lifetime.Scoped);
 
