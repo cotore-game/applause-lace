@@ -5,25 +5,29 @@ using UnityEngine;
 using System;
 using AssetManagement;
 using GameDialogue;
+using ADV.Presentation;
 
 public class GamePlayController : IStartable
 {
     private readonly ClapGameModel _model;
     private readonly GameView _view;
     private readonly StageData[] _stageList;
-    private readonly DialogueSystem _tutorial;
+    private readonly TextPresenter _textPresenter;
+    private readonly CharacterPresenter _characterPresenter;
 
     [Inject]
     public GamePlayController(
         ClapGameModel model,
         GameView view,
         StageData[] stageList,
-        DialogueSystem tutorial)
+        TextPresenter textPresenter,
+        CharacterPresenter characterPresenter)
     {
         _model = model;
         _view = view;
         _stageList = stageList;
-        _tutorial = tutorial;
+        _textPresenter = textPresenter;
+        _characterPresenter = characterPresenter;
     }
 
     public void Start()
@@ -55,7 +59,7 @@ public class GamePlayController : IStartable
         var tutorialData = ScriptableObject.CreateInstance<StageData>();
         tutorialData.Duration = 5f; // 固定
 
-        await _tutorial.PlayDialogue("これからゲームを始めます。クリックで3回以上拍手してください。");
+        await _textPresenter.DisplayTextAsync("チュートリアル","これからゲームを始めます。クリックで3回以上拍手してください。");
 
         await _view.ShowSpotlightOnButton(radius: 230f);
 
@@ -64,7 +68,8 @@ public class GamePlayController : IStartable
         await UniTask.WaitUntil(() => _model.Score >= 3);
 
         await _view.HideSpotlight();
-        await _tutorial.PlayDialogue("いい感じです！では本番ですよ～？");
+        await _characterPresenter.ShowCharacter("Host", "host_smile");
+        await _textPresenter.DisplayTextAsync("チュートリアル", "いい感じです！では本番ですよ～？");
         _model.Stop();
     }
 
@@ -86,13 +91,13 @@ public class GamePlayController : IStartable
             Debug.Log("Round Failed! Score -> 0");
 
             // _view.ShowAwkwardFace(); 
-            await _tutorial.PlayDialogue("あらら…張り切りすぎですよ…");
+            await _textPresenter.DisplayTextAsync("チュートリアル", "あらら…張り切りすぎですよ…");
         }
         else // 成功
         {
             Debug.Log($"Round Clear! Score: {_model.Score}");
             _view.ShowResult(_model.Score);
-            await _tutorial.PlayDialogue("素晴らしい拍手でした！");
+            await _textPresenter.DisplayTextAsync("チュートリアル", "素晴らしい拍手でした！");
         }
 
         // 共通のリザルト表示時間
@@ -102,23 +107,23 @@ public class GamePlayController : IStartable
     private async UniTask RunEndingPhase()
     {
         // 最終的な合計スコアなどを計算してもよい
-        await _tutorial.PlayDialogue("これでゲームは終わりです。");
-        await _tutorial.PlayDialogue("私の働きも悪くなかったでしょう？");
+        await _textPresenter.DisplayTextAsync("チュートリアル", "これでゲームは終わりです。");
+        await _textPresenter.DisplayTextAsync("チュートリアル", "私の働きも悪くなかったでしょう？");
 
         // エンディング中のクリック遊び用データ
         var endingData = ScriptableObject.CreateInstance<StageData>();
         endingData.Duration = 9999f;
 
         _model.StartGame(endingData);
-        await _tutorial.PlayDialogue("褒めてくれてもいいんですよ？", waitForInput: true);
+        await _textPresenter.DisplayTextAsync("チュートリアル", "褒めてくれてもいいんですよ？");
 
         int finalClicks = _model.Score;
         _model.Stop();
 
         if (finalClicks > 10)
-            await _tutorial.PlayDialogue("…ありがとうございます（照）");
+            await _textPresenter.DisplayTextAsync("チュートリアル", "…ありがとうございます（照）");
         else
-            await _tutorial.PlayDialogue("冗談ですよ。また来てくださいね。");
+            await _textPresenter.DisplayTextAsync("チュートリアル", "冗談ですよ。また来てくださいね。");
     }
 
     #region HelperTasks

@@ -885,6 +885,10 @@ MonoBehaviour:
   stageList:
   - {fileID: 11400000, guid: a36d7452e02cd8d41b1e1915488cb4e8, type: 2}
   - {fileID: 11400000, guid: a9b685fb9c4db8b44abe8d51cb5d1692, type: 2}
+  textView: {fileID: 3478529187445632971}
+  characterView: {fileID: 7122456057343845451}
+  enableDebugLog: 1
+  defaultScenarioData: {fileID: 0}
 --- !u!1 &1311999230
 GameObject:
   m_ObjectHideFlags: 0
@@ -1012,6 +1016,7 @@ MonoBehaviour:
   spotlightShape: {fileID: 770061828}
   softMask: {fileID: 1359067056}
   targetCanvas: {fileID: 1724019403}
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.9019608}
   initialRadius: 2000
   targetRadius: 256
   fadeInDuration: 0.8
@@ -1096,7 +1101,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 20
+  m_SortingOrder: 80
   m_TargetDisplay: 0
 --- !u!224 &1497016085
 RectTransform:
@@ -1592,59 +1597,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!1 &2034036400
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2034036401}
-  - component: {fileID: 2034036402}
-  m_Layer: 0
-  m_Name: ADVLifetimeScope
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2034036401
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2034036400}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2034036402
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2034036400}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9b032f7658b93f4091e8a57aaa5b415, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  parentReference:
-    TypeName: 
-  autoRun: 1
-  autoInjectGameObjects: []
-  textView: {fileID: 0}
-  characterView: {fileID: 0}
-  characterContainer: {fileID: 0}
-  enableDebugLog: 1
-  defaultScenarioData: {fileID: 0}
 --- !u!224 &399754425201228423 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6177124301525532312, guid: 9190abb3c7d5a64489ab315013ed897e, type: 3}
@@ -1655,6 +1607,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 582835426213754664, guid: 583f3dae3f454ad4b8daa7a8d39f17bc, type: 3}
   m_PrefabInstance: {fileID: 4654060625093364554}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &3478529187445632971 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1655123357172118648, guid: 583f3dae3f454ad4b8daa7a8d39f17bc, type: 3}
+  m_PrefabInstance: {fileID: 4654060625093364554}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60bf0f2b73180844ebd35af69765108a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &3932074331082680815 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2056146125814539811, guid: 9190abb3c7d5a64489ab315013ed897e, type: 3}
@@ -1964,6 +1927,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d7816ace6d917cb46b92aca82f7581f6, type: 3}
+--- !u!114 &7122456057343845451 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2452830778389316007, guid: 9190abb3c7d5a64489ab315013ed897e, type: 3}
+  m_PrefabInstance: {fileID: 7394820055300494440}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf8a60eb6fa9fa34dbc2686cacf60198, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &7371439235916901124
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2236,5 +2210,4 @@ SceneRoots:
   - {fileID: 1859924097}
   - {fileID: 518970000}
   - {fileID: 1278849674}
-  - {fileID: 2034036401}
   - {fileID: 4890141643421836713}

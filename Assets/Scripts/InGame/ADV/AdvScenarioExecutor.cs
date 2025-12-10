@@ -65,7 +65,7 @@ namespace ADV.System
         /// </summary>
         void IStartable.Start()
         {
-            InitializeFromSceneData().Forget();
+            // InitializeFromSceneData().Forget();
         }
 
         /// <summary>
