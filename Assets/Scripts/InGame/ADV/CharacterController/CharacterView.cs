@@ -18,11 +18,28 @@ namespace ADV.Presentation
 
         private Vector2 _initialPosition;
         private Tween _currentTween;
+        private Canvas _rootCanvas;
+        private bool _initialized;
 
         private void Awake()
         {
+            Initialize();
+        }
+
+        /// <summary>
+        /// 初期化（Awakeまたは最初のアクセス時に実行）
+        /// </summary>
+        private void Initialize()
+        {
+            if (_initialized) return;
+
             // 初期位置をキャッシュ（イージングイン先）
             _initialPosition = rectTransform.anchoredPosition;
+
+            // ルートCanvasを取得
+            _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
+
+            _initialized = true;
         }
 
         /// <summary>
@@ -41,16 +58,11 @@ namespace ADV.Presentation
         /// </summary>
         public async UniTask EaseIn(float duration = 0.5f, CancellationToken cancellationToken = default)
         {
+            Initialize();
             KillCurrentTween();
 
-            // 画面外左の位置を計算（画面幅の左端より外）
-            var canvas = GetComponentInParent<Canvas>();
-            var canvasRect = (canvas.transform as RectTransform).rect;
-            float screenLeftEdge = -canvasRect.width / 2f;
-
-            // さらに画像幅分左にオフセット
-            float imageWidth = rectTransform.rect.width;
-            Vector2 offScreenLeft = new Vector2(screenLeftEdge - imageWidth, _initialPosition.y);
+            // 画面外左の位置を計算
+            Vector2 offScreenLeft = CalculateOffScreenLeftPosition();
 
             // 開始位置を画面外左に設定
             rectTransform.anchoredPosition = offScreenLeft;
@@ -75,15 +87,11 @@ namespace ADV.Presentation
         /// </summary>
         public async UniTask EaseOut(float duration = 0.5f, CancellationToken cancellationToken = default)
         {
+            Initialize();
             KillCurrentTween();
 
             // 画面外左の位置を計算
-            var canvas = GetComponentInParent<Canvas>();
-            var canvasRect = (canvas.transform as RectTransform).rect;
-            float screenLeftEdge = -canvasRect.width / 2f;
-
-            float imageWidth = rectTransform.rect.width;
-            Vector2 offScreenLeft = new Vector2(screenLeftEdge - imageWidth, rectTransform.anchoredPosition.y);
+            Vector2 offScreenLeft = CalculateOffScreenLeftPosition();
 
             // 画面外左へイージング
             _currentTween = rectTransform.DOAnchorPos(offScreenLeft, duration)
@@ -105,14 +113,9 @@ namespace ADV.Presentation
         /// </summary>
         public void HideImmediate()
         {
+            Initialize();
             KillCurrentTween();
-
-            var canvas = GetComponentInParent<Canvas>();
-            var canvasRect = (canvas.transform as RectTransform).rect;
-            float screenLeftEdge = -canvasRect.width / 2f;
-            float imageWidth = rectTransform.rect.width;
-
-            rectTransform.anchoredPosition = new Vector2(screenLeftEdge - imageWidth, _initialPosition.y);
+            rectTransform.anchoredPosition = CalculateOffScreenLeftPosition();
         }
 
         /// <summary>
@@ -120,8 +123,33 @@ namespace ADV.Presentation
         /// </summary>
         public void ShowImmediate()
         {
+            Initialize();
             KillCurrentTween();
             rectTransform.anchoredPosition = _initialPosition;
+        }
+
+        /// <summary>
+        /// 画面外左の座標を計算
+        /// Anchor (0.5, 0) を考慮した計算
+        /// </summary>
+        private Vector2 CalculateOffScreenLeftPosition()
+        {
+            // CanvasのRectTransform
+            RectTransform canvasRect = _rootCanvas.transform as RectTransform;
+
+            // Canvas幅の取得
+            float canvasWidth = canvasRect.rect.width;
+
+            // 画像の幅
+            float imageWidth = rectTransform.rect.width;
+
+            // Anchor (0.5, 0) の場合、x=0 はCanvas中央
+            // 画面左端は -canvasWidth/2
+            // 画像が完全に隠れるには、さらに画像幅の半分だけ左に移動
+            float offScreenX = -(canvasWidth / 2f) - (imageWidth / 2f);
+
+            // Y座標は初期位置を維持
+            return new Vector2(offScreenX, _initialPosition.y);
         }
 
         /// <summary>

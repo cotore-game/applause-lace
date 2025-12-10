@@ -68,7 +68,7 @@ public class GamePlayController : IStartable
         await UniTask.WaitUntil(() => _model.Score >= 3);
 
         await _view.HideSpotlight();
-        await _characterPresenter.ShowCharacter("Host", "host_smile");
+        await _characterPresenter.ShowCharacter("Scientist", "scientist_smile");
         await _textPresenter.DisplayTextAsync("チュートリアル", "いい感じです！では本番ですよ～？");
         _model.Stop();
     }
