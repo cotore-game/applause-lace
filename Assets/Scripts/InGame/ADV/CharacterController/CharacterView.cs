@@ -2,8 +2,8 @@
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using System.Threading;
 using System;
+using System.Threading;
 
 namespace ADV.Presentation
 {
@@ -27,7 +27,7 @@ namespace ADV.Presentation
         }
 
         /// <summary>
-        /// 初期化（Awakeまたは最初のアクセス時に実行）
+        /// 初期化
         /// </summary>
         private void Initialize()
         {
@@ -61,6 +61,9 @@ namespace ADV.Presentation
             Initialize();
             KillCurrentTween();
 
+            // 先に表示状態にする
+            characterImage.enabled = true;
+
             // 画面外左の位置を計算
             Vector2 offScreenLeft = CalculateOffScreenLeftPosition();
 
@@ -83,7 +86,7 @@ namespace ADV.Presentation
         }
 
         /// <summary>
-        /// 現在位置から画面外左へイージングアウト
+        /// 現在位置から画面外左へイージングアウト（その後非表示）
         /// </summary>
         public async UniTask EaseOut(float duration = 0.5f, CancellationToken cancellationToken = default)
         {
@@ -106,26 +109,33 @@ namespace ADV.Presentation
                 KillCurrentTween();
                 rectTransform.anchoredPosition = offScreenLeft;
             }
+            finally
+            {
+                // イージング完了後に非表示
+                characterImage.enabled = false;
+            }
         }
 
         /// <summary>
-        /// 即座に非表示（画面外左へ移動）
+        /// 即座に非表示（画面外左へ移動 + 非表示）
         /// </summary>
         public void HideImmediate()
         {
             Initialize();
             KillCurrentTween();
             rectTransform.anchoredPosition = CalculateOffScreenLeftPosition();
+            characterImage.enabled = false;
         }
 
         /// <summary>
-        /// 即座に表示（初期位置へ移動）
+        /// 即座に表示（初期位置へ移動 + 表示）
         /// </summary>
         public void ShowImmediate()
         {
             Initialize();
             KillCurrentTween();
             rectTransform.anchoredPosition = _initialPosition;
+            characterImage.enabled = true;
         }
 
         /// <summary>
@@ -143,10 +153,8 @@ namespace ADV.Presentation
             // 画像の幅
             float imageWidth = rectTransform.rect.width;
 
-            // Anchor (0.5, 0) の場合、x=0 はCanvas中央
-            // 画面左端は -canvasWidth/2
-            // 画像が完全に隠れるには、さらに画像幅の半分だけ左に移動
-            float offScreenX = -(canvasWidth / 2f) - (imageWidth / 2f);
+            // Anchor (0.5, 0) の場合、x=0 はCanvas中央, Pivotは左下
+            float offScreenX = - (imageWidth / 2f);
 
             // Y座標は初期位置を維持
             return new Vector2(offScreenX, _initialPosition.y);

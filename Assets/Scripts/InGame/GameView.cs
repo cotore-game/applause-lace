@@ -3,13 +3,14 @@ using TMPro;
 using Coffee.UIExtensions;
 using GameDirection;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 
 public class GameView : MonoBehaviour
 {
     [Header("UI Elements")]
-    [SerializeField] private GameObject ADVContainer;
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private ClapButton clapButton;
+    [SerializeField] private CurtainController curtain;
 
     [Header("Effects")]
     [SerializeField] private UIParticle confettiUIParticle;
@@ -48,8 +49,7 @@ public class GameView : MonoBehaviour
 
     public void UpdateScore(int score)
     {
-        scoreText.text = $"Claps: {score}";
-        UpdateCharacterExpression(score);
+        scoreText.text = $"{score}";
     }
 
     public void PlayConfetti()
@@ -114,8 +114,139 @@ public class GameView : MonoBehaviour
         // リザルト表示
     }
 
-    private void UpdateCharacterExpression(int score)
+    public async UniTask ShowCurtain()
     {
-        // キャラクター表情変化ロジック
+        await curtain.OpenCurtainAsync();
+    }
+
+    public async UniTask HideCurtain()
+    {
+        await curtain.CloseCurtainAsync();
+    }
+
+    public void ChangeNextBG()
+    {
+        curtain.NextBackground();
+    }
+
+    /// <summary>
+    /// ClapButtonを非表示
+    /// </summary>
+    public void HideClapButton()
+    {
+        if (clapButton != null)
+        {
+            clapButton.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// ClapButtonをイージングインで表示
+    /// </summary>
+    public async UniTask ShowClapButton()
+    {
+        if (clapButton != null)
+        {
+            clapButton.gameObject.SetActive(true);
+            // ボタンのスケールアニメーションなど
+            var rect = clapButton.GetRectTransform();
+            if (rect != null)
+            {
+                rect.localScale = Vector3.zero;
+                await rect.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack).ToUniTask();
+            }
+        }
+    }
+
+    /// <summary>
+    /// スポットライトマスクを無効化（暗転なし状態）
+    /// </summary>
+    public void DisableSpotlightMask()
+    {
+        if (spotlightOverlay != null)
+        {
+            spotlightOverlay.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 背景をインデックスで設定
+    /// </summary>
+    public void SetBackground(int index)
+    {
+        if (curtain != null)
+        {
+            // CurtainControllerに背景切り替えメソッドがあれば使用
+            // 例: curtain.SetBackgroundByIndex(index);
+        }
+    }
+
+    /// <summary>
+    /// 幕を閉じた状態にリセット
+    /// </summary>
+    public void ResetCurtain()
+    {
+        if (curtain != null)
+        {
+            curtain.ResetCurtainPosition();
+        }
+    }
+
+    /// <summary>
+    /// 幕を開けるアニメーション
+    /// </summary>
+    public async UniTask OpenCurtainAsync()
+    {
+        if (curtain != null)
+        {
+            await curtain.OpenCurtainAsync();
+        }
+    }
+
+    /// <summary>
+    /// 幕を閉じるアニメーション
+    /// </summary>
+    public async UniTask CloseCurtainAsync()
+    {
+        if (curtain != null)
+        {
+            await curtain.CloseCurtainAsync();
+        }
+    }
+
+    /// <summary>
+    /// スポットライトで画面を暗くする
+    /// </summary>
+    public async UniTask DimWithSpotlight()
+    {
+        if (spotlightOverlay != null)
+        {
+            spotlightOverlay.gameObject.SetActive(true);
+            // 画面全体を暗くする（スポットなし）
+            spotlightOverlay.ShowImmediate(Vector2.zero, 0f);
+            await spotlightOverlay.SetRadius(5000f, 0.5f);
+        }
+    }
+
+    /// <summary>
+    /// スポットライトをクリア
+    /// </summary>
+    public async UniTask ClearSpotlight()
+    {
+        if (spotlightOverlay != null)
+        {
+            await spotlightOverlay.Hide();
+        }
+    }
+
+    /// <summary>
+    /// ハッピーエフェクトを再生
+    /// </summary>
+    public void PlayHappyEffect()
+    {
+        if (happyUIParticle != null)
+        {
+            happyUIParticle.Play();
+        }
     }
 }

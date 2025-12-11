@@ -19,6 +19,27 @@ namespace ADV.Presentation
             _view = view;
             _model = new TextDisplayModel();
             _cts = new CancellationTokenSource();
+
+            // 初期状態は画面外に配置
+            _view.SetOffScreenImmediately();
+        }
+
+        /// <summary>
+        /// テキストウィンドウをイージングイン
+        /// </summary>
+        public async UniTask EaseInWindowAsync(CancellationToken cancellationToken = default)
+        {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
+            await _view.EaseInFromOffScreen(linkedCts.Token);
+        }
+
+        /// <summary>
+        /// テキストウィンドウをイージングアウト
+        /// </summary>
+        public async UniTask EaseOutWindowAsync(CancellationToken cancellationToken = default)
+        {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
+            await _view.EaseOutToOffScreen(linkedCts.Token);
         }
 
         /// <summary>

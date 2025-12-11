@@ -14,6 +14,9 @@ public class GamePlayController : IStartable
     private readonly StageData[] _stageList;
     private readonly TextPresenter _textPresenter;
     private readonly CharacterPresenter _characterPresenter;
+    private readonly TitleView _titleView;
+    private readonly ResultView _resultView;
+    private readonly CountdownView _countdownView;
 
     [Inject]
     public GamePlayController(
@@ -21,13 +24,19 @@ public class GamePlayController : IStartable
         GameView view,
         StageData[] stageList,
         TextPresenter textPresenter,
-        CharacterPresenter characterPresenter)
+        CharacterPresenter characterPresenter,
+        TitleView titleView,
+        ResultView resultView,
+        CountdownView countdownView)
     {
         _model = model;
         _view = view;
         _stageList = stageList;
         _textPresenter = textPresenter;
         _characterPresenter = characterPresenter;
+        _titleView = titleView;
+        _resultView = resultView;
+        _countdownView = countdownView;
     }
 
     public void Start()
@@ -37,102 +46,235 @@ public class GamePlayController : IStartable
 
     private async UniTaskVoid RunGameLoop()
     {
+        // ======================
+        // タイトル画面
+        // ======================
+        await ShowTitlePhase();
+
+        // ======================
         // チュートリアル
+        // ======================
         await RunTutorialPhase();
 
-        // 全てのステージを順番に
-        foreach (var stageData in _stageList)
+        // ======================
+        // ゲームラウンド1
+        // ======================
+        if (_stageList != null && _stageList.Length > 0)
         {
-            // ステージ実行
-            await RunStagePhase(stageData);
-
-            // ステージ間の暗転や遷移演出があればここに挟む
-            await UniTask.Delay(1000);
+            await RunGameRound1(_stageList[0]);
         }
 
-        // エンディング
-        await RunEndingPhase();
+        // ======================
+        // タイトルへ戻る
+        // ======================
+        await ReturnToTitle();
     }
 
+    // ======================
+    // タイトルフェーズ
+    // ======================
+    private async UniTask ShowTitlePhase()
+    {
+        Debug.Log("[GamePlay] タイトルフェーズ開始");
+
+        // 初期状態セット
+        _view.gameObject.SetActive(false); // ゲームUIを非表示
+        _textPresenter.Hide(); // ADV非表示
+        await _characterPresenter.HideCharacter(useEasing: false); // キャラ非表示
+
+        // 幕を閉じた状態にリセット
+        _view.ResetCurtain();
+
+        // タイトル表示
+        _titleView.Show();
+
+        // Press Any Key 待機
+        await _titleView.WaitForAnyKey();
+
+        // タイトルをフェードアウト
+        await _titleView.Hide();
+
+        Debug.Log("[GamePlay] タイトルフェーズ終了");
+    }
+
+    // ======================
+    // チュートリアルフェーズ
+    // ======================
     private async UniTask RunTutorialPhase()
     {
-        var tutorialData = ScriptableObject.CreateInstance<StageData>();
-        tutorialData.Duration = 5f; // 固定
+        Debug.Log("[GamePlay] チュートリアルフェーズ開始");
 
-        await _textPresenter.DisplayTextAsync("チュートリアル","これからゲームを始めます。クリックで3回以上拍手してください。");
+        // ゲームUIをアクティブ化（ボタンは非表示のまま）
+        _view.gameObject.SetActive(true);
+        _view.HideClapButton();
 
+        // スポットライトのマスクを非表示（暗転なし）
+        _view.DisableSpotlightMask();
+
+        // ADV TextDisplayView のみをイージングイン
+        await _textPresenter.EaseInWindowAsync();
+
+        // シナリオ再生
+        await _textPresenter.DisplayTextAsync("司会者", "これからゲームを始めます。");
+        await UniTask.Delay(500);
+
+        // スポットライト点灯（ボタン位置）
         await _view.ShowSpotlightOnButton(radius: 230f);
 
-        // チュートリアルは特殊なので別途制御してもいいが、今回は簡易化
+        // キャラクターがイージングイン
+        await _characterPresenter.ShowCharacter("Scientist", "scientist_smile");
+
+        // シナリオ進める
+        await _textPresenter.DisplayTextAsync("科学者", "クリックで3回以上拍手してください。");
+
+        // ボタンをイージングイン表示
+        await _view.ShowClapButton();
+
+        // チュートリアル用のゲームデータ
+        var tutorialData = ScriptableObject.CreateInstance<StageData>();
+        tutorialData.Duration = 99999f; // 実質無制限
+
         _model.StartGame(tutorialData);
+
+        // 3回以上クリックされるまで待機
         await UniTask.WaitUntil(() => _model.Score >= 3);
 
-        await _view.HideSpotlight();
-        await _characterPresenter.ShowCharacter("Scientist", "scientist_smile");
-        await _textPresenter.DisplayTextAsync("チュートリアル", "いい感じです！では本番ですよ～？");
         _model.Stop();
+
+        // スポットライト消灯
+        await _view.HideSpotlight();
+
+        // チュートリアル完了メッセージ
+        await _textPresenter.DisplayTextAsync("科学者", "いい感じです！では本番ですよ～？");
+
+        // キャラクター退場
+        await _characterPresenter.HideCharacter();
+
+        // ADVイージングアウト
+        await _textPresenter.EaseOutWindowAsync();
+
+        Debug.Log("[GamePlay] チュートリアルフェーズ終了");
     }
 
-    // ステージ進行のコアロジック    
-    private async UniTask RunStagePhase(StageData data)
+    // ======================
+    // ゲームラウンド1
+    // ======================
+    private async UniTask RunGameRound1(StageData stageData)
     {
-        _model.StartGame(data);
+        Debug.Log("[GamePlay] ゲームラウンド1開始");
 
-        // 失敗か成功
+        // ADVをイージングアウト（念のため）
+        await _textPresenter.EaseOutWindowAsync();
+
+        // 背景、立ち絵セット
+        _view.SetBackground(0); // 背景インデックス0
+        await _characterPresenter.ShowCharacter("Graduate", "graduate_normal", useEasing: false);
+
+        // カウントUIをリセット＆表示
+        _countdownView.ResetCount();
+        _countdownView.Show();
+
+        // 幕と看板を同時に上げるアニメーション
+        await _view.OpenCurtainAsync();
+
+        // カウントダウン画像のカウントダウン表示 (3, 2, 1, Start!)
+        await _countdownView.PlayCountdown();
+
+        // ゲーム開始
+        _model.StartGame(stageData);
+
+        // 失敗か成功かを待機
         int resultType = await UniTask.WhenAny(
             WaitRoundFailed(),
             WaitClearCondition()
         );
 
-        _model.Stop(); // ゲームループ停止
+        _model.Stop();
 
+        // 終わり後、祝福終了アニメーション
+        await PlayCelebrationAnimation();
+
+        // SD立ち絵フェードアウト
+        await _characterPresenter.HideCharacter();
+
+        // スポットライトオーバーレイで少し暗くする
+        await _view.DimWithSpotlight();
+
+        // ADVイージングイン
+        await _textPresenter.EaseInWindowAsync();
+
+        // ResultTextDisplayViewを表示
+        _resultView.Show();
+
+        // リザルトの表示
         if (resultType == 0) // 失敗
         {
-            Debug.Log("Round Failed! Score -> 0");
-
-            // _view.ShowAwkwardFace(); 
-            await _textPresenter.DisplayTextAsync("チュートリアル", "あらら…張り切りすぎですよ…");
+            Debug.Log("[GamePlay] ラウンド失敗");
+            _resultView.ShowResult(0, "残念...");
+            await _textPresenter.DisplayTextAsync("司会者", "あらら…張り切りすぎですよ…");
         }
         else // 成功
         {
-            Debug.Log($"Round Clear! Score: {_model.Score}");
-            _view.ShowResult(_model.Score);
-            await _textPresenter.DisplayTextAsync("チュートリアル", "素晴らしい拍手でした！");
+            Debug.Log($"[GamePlay] ラウンド成功 - スコア: {_model.Score}");
+            _resultView.ShowResult(_model.Score, "素晴らしい！");
+            await _textPresenter.DisplayTextAsync("司会者", $"素晴らしい拍手でした！スコア: {_model.Score}");
         }
 
-        // 共通のリザルト表示時間
         await UniTask.Delay(2000);
+
+        // ResultView非表示
+        _resultView.Hide();
+
+        // ADVイージングアウト
+        await _textPresenter.EaseOutWindowAsync();
+
+        // スポットライト解除
+        await _view.ClearSpotlight();
+
+        // 幕おろすアニメーション
+        await _view.CloseCurtainAsync();
+
+        Debug.Log("[GamePlay] ゲームラウンド1終了");
     }
 
-    private async UniTask RunEndingPhase()
+    // ======================
+    // タイトルへ戻る
+    // ======================
+    private async UniTask ReturnToTitle()
     {
-        // 最終的な合計スコアなどを計算してもよい
-        await _textPresenter.DisplayTextAsync("チュートリアル", "これでゲームは終わりです。");
-        await _textPresenter.DisplayTextAsync("チュートリアル", "私の働きも悪くなかったでしょう？");
+        Debug.Log("[GamePlay] タイトルへ戻ります");
 
-        // エンディング中のクリック遊び用データ
-        var endingData = ScriptableObject.CreateInstance<StageData>();
-        endingData.Duration = 9999f;
+        // 少し待機
+        await UniTask.Delay(1000);
 
-        _model.StartGame(endingData);
-        await _textPresenter.DisplayTextAsync("チュートリアル", "褒めてくれてもいいんですよ？");
+        // ゲームUIを非表示
+        _view.gameObject.SetActive(false);
 
-        int finalClicks = _model.Score;
-        _model.Stop();
-
-        if (finalClicks > 10)
-            await _textPresenter.DisplayTextAsync("チュートリアル", "…ありがとうございます（照）");
-        else
-            await _textPresenter.DisplayTextAsync("チュートリアル", "冗談ですよ。また来てくださいね。");
+        // タイトル画面へ
+        await ShowTitlePhase();
     }
 
-    #region HelperTasks
+    // ======================
+    // ヘルパーメソッド
+    // ======================
 
-    // タイムアップ後のクリック
+    /// <summary>
+    /// 祝福アニメーション（イージングイン、イージングアウト）
+    /// </summary>
+    private async UniTask PlayCelebrationAnimation()
+    {
+        // 紙吹雪などのエフェクトを再生
+        _view.PlayHappyEffect();
+        await UniTask.Delay(1500);
+        _view.StopClapEffects();
+    }
+
+    /// <summary>
+    /// タイムアップ後のクリックで失敗
+    /// </summary>
     private async UniTask WaitRoundFailed()
     {
         var source = new UniTaskCompletionSource();
-        // イベントが来たらTask完了とする
         Action handler = () => source.TrySetResult();
 
         _model.OnRoundFailed += handler;
@@ -140,21 +282,22 @@ public class GamePlayController : IStartable
         {
             await source.Task;
         }
-        finally 
+        finally
         {
             _model.OnRoundFailed -= handler;
         }
     }
 
-    // タイムアップしてから、クリックせずに数秒耐える
+    /// <summary>
+    /// タイムアップ後、2秒クリックしなければクリア
+    /// </summary>
     private async UniTask WaitClearCondition()
     {
         var source = new UniTaskCompletionSource();
 
-        // 内部タイマーがリミットを超えたら発火
-        Action timeUpHandler = () => {
-            // ここからさらに2秒(演出余韻)クリックしなければクリア確定とみなす
-            // この2秒の間にクリックしたら WaitRoundFailed の方が先に反応してキャンセルされる想定
+        Action timeUpHandler = () =>
+        {
+            // タイムアップから2秒後にクリア確定
             UniTask.Delay(2000)
                 .ContinueWith(() => source.TrySetResult()).Forget();
         };
@@ -169,6 +312,4 @@ public class GamePlayController : IStartable
             _model.OnHiddenTimeUp -= timeUpHandler;
         }
     }
-
-    #endregion
 }

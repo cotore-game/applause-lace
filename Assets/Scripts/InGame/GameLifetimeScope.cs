@@ -4,18 +4,21 @@ using UnityEngine;
 using GameDialogue;
 using ADV.Presentation;
 using ADV.Commands;
-using ADV.System; // AdvLifetimeScopeがこの名前空間に属していたため
+using ADV.System;
 using SceneManagement;
 
-// 以下のクラス名や参照アセンブリ名は、プロジェクトに合わせて調整してください。
-// ADV.System のクラスと GameDialogue のクラスが混在することになります。
-
-public class CompositeLifetimeScope : LifetimeScope
+public class GameLifetimeScope : LifetimeScope
 {
     // --- GameLifetimeScopeからのSerializeField ---
     [Header("Game Settings")]
     [SerializeField] private GameView gameView;
-    [SerializeField] private StageData[] stageList; // Inspectorで設定するデータ
+    [SerializeField] private StageData[] stageList;
+
+    // --- 追加のView ---
+    [Header("Additional Views")]
+    [SerializeField] private TitleView titleView;
+    [SerializeField] private ResultView resultView;
+    [SerializeField] private CountdownView countdownView;
 
     // --- AdvLifetimeScopeからのSerializeField ---
     [Header("ADV View Prefabs")]
@@ -28,15 +31,16 @@ public class CompositeLifetimeScope : LifetimeScope
 
     protected override void Configure(IContainerBuilder builder)
     {
-        // ===========================================
-        // 1. GameLifetimeScope の設定
-        // ===========================================
 
         // Model (ClapGameModel)
         builder.Register<ClapGameModel>(Lifetime.Scoped);
 
         // View (GameView)
         builder.RegisterComponent(gameView);
+
+        builder.RegisterComponent(titleView);
+        builder.RegisterComponent(resultView);
+        builder.RegisterComponent(countdownView);
 
         // Data (StageData[])
         builder.RegisterInstance(stageList);
@@ -47,14 +51,10 @@ public class CompositeLifetimeScope : LifetimeScope
         // EntryPoint - Flow (GamePlayController)
         builder.RegisterEntryPoint<GamePlayController>();
 
-        // ===========================================
-        // 2. AdvLifetimeScope の設定
-        // ===========================================
-
-        // View層 (TextDisplayView, CharacterView はPresenterで直接使用)
+        // View層
         builder.RegisterComponent(textView);
 
-        // Presenter層 (TextPresenter, CharacterPresenter)
+        // Presenter層
         builder.Register<TextPresenter>(Lifetime.Scoped)
             .WithParameter(textView);
 
@@ -62,15 +62,9 @@ public class CompositeLifetimeScope : LifetimeScope
             .WithParameter(characterView);
 
         // SceneTransitioner (Singleton Instance)
-        // Note: SceneTransitioner.Instance が存在する前提
         builder.RegisterInstance(SceneTransitioner.Instance);
 
         // CommandFactory
         builder.Register<CommandFactory>(Lifetime.Scoped);
-
-        // EntryPoint (AdvScenarioExecutor)
-        builder.RegisterEntryPoint<AdvScenarioExecutor>()
-            .WithParameter(enableDebugLog)
-            .WithParameter(defaultScenarioData);
     }
 }
