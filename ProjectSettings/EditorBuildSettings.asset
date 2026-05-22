@@ -14,6 +14,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/ResultScene.unity
     guid: 2287d8044cf5e7449b81aff4b8bbe2c3
+  - enabled: 1
+    path: Assets/Scenes/Dev/ClapInGameDev.unity
+    guid: 813034c21b7e0e24fb027534cdebba2e
+  - enabled: 1
+    path: Assets/Scenes/Dev/GameCore.unity
+    guid: 6e1a60baaf59975438cd935a573842cf
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

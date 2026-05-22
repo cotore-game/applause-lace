@@ -168,7 +168,7 @@ MonoBehaviour:
     TypeName: 
   autoRun: 1
   autoInjectGameObjects: []
-  curtainController: {fileID: 0}
+  curtainController: {fileID: 1315326886}
 --- !u!81 &100544340
 AudioListener:
   m_ObjectHideFlags: 0
@@ -405,6 +405,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1024877494921184250, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
   m_PrefabInstance: {fileID: 1315326884}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1315326886 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3383078163538530085, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
+  m_PrefabInstance: {fileID: 1315326884}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 789f003913776dc4298ddfffe45fb664, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1918429045
 GameObject:
   m_ObjectHideFlags: 0
