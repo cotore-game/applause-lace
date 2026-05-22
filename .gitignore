@@ -105,3 +105,6 @@ CaseSensitiveTest
 # Editor generated files
 .vsconfig
 .vscode
+
+# LegacyScripts
+/LegacyScripts
