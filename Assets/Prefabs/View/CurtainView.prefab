@@ -193,8 +193,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainCurtain: {fileID: 7904590482739781535}
   topDecoration: {fileID: 2066190791282958657}
-  backgroundImage: {fileID: 0}
-  backgroundList: []
   anticipationDuration: 0.3
   anticipationDistance: 50
   mainCurtainUpDuration: 1
