@@ -1,9 +1,6 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using VContainer;
-using System.Collections.Generic;
 
 /// <summary>
 /// 舞台幕の開閉と背景切り替えを制御するコントローラー
@@ -13,10 +10,6 @@ public class CurtainController : MonoBehaviour
     [Header("幕の参照")]
     [SerializeField] private RectTransform mainCurtain;     // 大幕
     [SerializeField] private RectTransform topDecoration;   // 上部装飾カーテン
-
-    [Header("背景の参照")]
-    [SerializeField] private Image backgroundImage;         // 背景画像
-    [SerializeField] private List<Sprite> backgroundList = new List<Sprite>(); // 背景リスト
 
     [Header("アニメーション設定")]
     [SerializeField] private float anticipationDuration = 0.3f;     // 予備動作の時間
@@ -28,10 +21,10 @@ public class CurtainController : MonoBehaviour
     [SerializeField] private Ease upEase = Ease.OutCubic;           // 上昇時のイージング
     [SerializeField] private Ease downEase = Ease.InCubic;          // 下降時のイージング
 
-    private int currentBackgroundIndex = 0;
     private Vector2 mainCurtainInitialPos;
     private Vector2 topDecorationInitialPos;
     private RectTransform canvasRectTransform;
+    private Canvas rootCanvas;
 
     private void Awake()
     {
@@ -46,62 +39,21 @@ public class CurtainController : MonoBehaviour
         }
 
         // Canvasの参照を取得
-        Canvas canvas = GetComponentInParent<Canvas>();
-        if (canvas != null)
+        rootCanvas = GetComponentInParent<Canvas>();
+        if (rootCanvas != null)
         {
-            canvasRectTransform = canvas.GetComponent<RectTransform>();
+            canvasRectTransform = rootCanvas.GetComponent<RectTransform>();
         }
     }
 
     /// <summary>
-    /// 背景リストを初期化
+    /// 幕の描画順（レイヤー）を動的に変更する
     /// </summary>
-    /// <param name="backgrounds">背景スプライトのリスト</param>
-    public void InitializeBackgrounds(List<Sprite> backgrounds)
+    public void SetSortingOrder(int order)
     {
-        if (backgrounds == null || backgrounds.Count == 0)
+        if (rootCanvas != null)
         {
-            Debug.LogWarning("背景リストが空です");
-            return;
-        }
-
-        backgroundList = new List<Sprite>(backgrounds);
-        currentBackgroundIndex = 0;
-
-        if (backgroundImage != null && backgroundList.Count > 0)
-        {
-            backgroundImage.sprite = backgroundList[0];
-        }
-    }
-
-    /// <summary>
-    /// 次の背景に切り替え（ループ）
-    /// </summary>
-    public void NextBackground()
-    {
-        if (backgroundList == null || backgroundList.Count == 0)
-        {
-            Debug.LogWarning("背景リストが空です");
-            return;
-        }
-
-        currentBackgroundIndex = (currentBackgroundIndex + 1) % backgroundList.Count;
-
-        if (backgroundImage != null)
-        {
-            backgroundImage.sprite = backgroundList[currentBackgroundIndex];
-        }
-    }
-
-    /// <summary>
-    /// 背景を即座に置き換え
-    /// </summary>
-    /// <param name="sprite">新しい背景スプライト</param>
-    public void SetBackground(Sprite sprite)
-    {
-        if (backgroundImage != null && sprite != null)
-        {
-            backgroundImage.sprite = sprite;
+            rootCanvas.sortingOrder = order;
         }
     }
 
@@ -234,24 +186,6 @@ public class CurtainController : MonoBehaviour
         // Canvasの高さの半分が画面上端
         float canvasHeight = canvasRectTransform.rect.height;
         return canvasHeight / 2f;
-    }
-
-    /// <summary>
-    /// 幕を開けて背景を次に進める一連の動作
-    /// </summary>
-    public async UniTask OpenAndNextBackgroundAsync()
-    {
-        await OpenCurtainAsync();
-        NextBackground();
-    }
-
-    /// <summary>
-    /// 背景を切り替えて幕を閉じる一連の動作
-    /// </summary>
-    public async UniTask NextBackgroundAndCloseAsync()
-    {
-        NextBackground();
-        await CloseCurtainAsync();
     }
 
     private void OnDestroy()
