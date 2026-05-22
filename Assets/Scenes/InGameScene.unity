@@ -1965,6 +1965,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2066190791282958657, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3383078163538530085, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
       propertyPath: backgroundImage
       value: 
@@ -1979,6 +1983,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7527169370612562917, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
       propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7527169370612562917, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
+      propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7527169370612562917, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
