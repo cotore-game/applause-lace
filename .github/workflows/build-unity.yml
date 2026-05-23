@@ -7,6 +7,10 @@ on:
         description: 'Build version'
         required: true
         type: string
+      app-name:
+        description: 'Application name (used as Unity buildName)'
+        required: true
+        type: string
     secrets:
       UNITY_EMAIL:
         required: true
@@ -25,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       artifact-name: ${{ steps.set-output.outputs.artifact-name }}
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -52,7 +56,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          buildName: ApplauseLace
+          buildName: ${{ inputs.app-name }}
           targetPlatform: StandaloneWindows64
           allowDirtyBuild: true
 

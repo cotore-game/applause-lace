@@ -20,6 +20,14 @@ on:
         required: false
         type: string
         default: 'Build'
+      link-url:
+        description: |
+          通知の URL。
+          - リリース作成時 : softprops/action-gh-release の outputs.url を渡す（リリースページへ飛ぶ）
+          - ビルドのみ時 : 空文字を渡す（Actions のラン結果ページへ飛ぶ）
+        required: false
+        type: string
+        default: ''
     secrets:
       DISCORD_WEBHOOK_URL:
         required: true
@@ -28,31 +36,38 @@ jobs:
   notify:
     name: Send Discord Notification
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Prepare notification data
         id: prepare
         run: |
           STATUS="${{ inputs.status }}"
-          
+
           # ステータスに応じた色とアイコン
           if [ "$STATUS" == "success" ]; then
-            COLOR="3066993"  # 緑
+            COLOR="3066993"   # 緑
             EMOJI="✅"
-            TITLE="ビルド成功"
+            TITLE="成功"
           elif [ "$STATUS" == "failure" ]; then
             COLOR="15158332"  # 赤
             EMOJI="❌"
-            TITLE="ビルド失敗"
+            TITLE="失敗"
           else
             COLOR="15844367"  # オレンジ
             EMOJI="⚠️"
-            TITLE="ビルドキャンセル"
+            TITLE="キャンセル"
           fi
-          
-          echo "color=${COLOR}" >> $GITHUB_OUTPUT
-          echo "emoji=${EMOJI}" >> $GITHUB_OUTPUT
-          echo "title=${TITLE}" >> $GITHUB_OUTPUT
+
+          # link-url が渡されていればそれを使い、なければ Actions ラン結果 URL にフォールバック
+          LINK_URL="${{ inputs.link-url }}"
+          if [ -z "$LINK_URL" ]; then
+            LINK_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+
+          echo "color=${COLOR}"   >> $GITHUB_OUTPUT
+          echo "emoji=${EMOJI}"   >> $GITHUB_OUTPUT
+          echo "title=${TITLE}"   >> $GITHUB_OUTPUT
+          echo "url=${LINK_URL}"  >> $GITHUB_OUTPUT
 
       - name: Send Discord notification
         uses: tsickert/discord-webhook@v6.0.0
@@ -66,7 +81,7 @@ jobs:
             **ステータス:** ${{ inputs.status }}
             **ジョブ:** ${{ inputs.job-name }}
           embed-color: ${{ steps.prepare.outputs.color }}
-          embed-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          embed-url: ${{ steps.prepare.outputs.url }}
           embed-timestamp: ${{ github.event.head_commit.timestamp }}
           embed-fields: |
             [
@@ -86,8 +101,8 @@ jobs:
                 "inline": true
               },
               {
-                "name": "🔗 ワークフロー",
-                "value": "[詳細を見る](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                "name": "🔗 詳細",
+                "value": "[詳細を見る](${{ steps.prepare.outputs.url }})",
                 "inline": false
               }
             ]

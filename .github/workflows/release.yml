@@ -31,11 +31,27 @@ jobs:
     name: Initialize
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      should_release: ${{ steps.check.outputs.should_release }}
-      is_draft: ${{ steps.check.outputs.is_draft }}
-      is_prerelease: ${{ steps.check.outputs.is_prerelease }}
+      # バージョンリリース設定
+      version:        ${{ steps.version.outputs.version }}
+      should_release: ${{ steps.release-check.outputs.should_release }}
+      is_draft:       ${{ steps.release-check.outputs.is_draft }}
+      is_prerelease:  ${{ steps.release-check.outputs.is_prerelease }}
+      # プロジェクト変数
+      app-name:       ${{ steps.project.outputs.app-name }}
+      app-publisher:  ${{ steps.project.outputs.app-publisher }}
+      repo-url:       ${{ steps.project.outputs.repo-url }}
+
     steps:
+      # プロジェクト固有の定数
+      # 新しいプロジェクトに流用する際は app-name のみ書き換える。
+      # app-publisher と repo-url は GitHub コンテキストから自動生成。
+      - name: Set project variables
+        id: project
+        run: |
+          echo "app-name=ApplauseLace" >> $GITHUB_OUTPUT
+          echo "app-publisher=${{ github.repository_owner }}" >> $GITHUB_OUTPUT
+          echo "repo-url=${{ github.server_url }}/${{ github.repository }}" >> $GITHUB_OUTPUT
+
       - name: Determine Version
         id: version
         run: |
@@ -47,20 +63,20 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Check release settings
-        id: check
+        id: release-check
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]] || [[ "${{ inputs.create_release }}" == "true" ]]; then
             echo "should_release=true" >> $GITHUB_OUTPUT
           else
             echo "should_release=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "is_draft=false" >> $GITHUB_OUTPUT
           else
             echo "is_draft=${{ inputs.draft_release }}" >> $GITHUB_OUTPUT
           fi
-          
+
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             if [[ "${{ github.ref }}" =~ (beta|alpha|rc) ]]; then
               echo "is_prerelease=true" >> $GITHUB_OUTPUT
@@ -77,11 +93,12 @@ jobs:
     needs: init
     uses: ./.github/workflows/build-unity.yml
     with:
-      version: ${{ needs.init.outputs.version }}
+      version:  ${{ needs.init.outputs.version }}
+      app-name: ${{ needs.init.outputs.app-name }}
     secrets:
-      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_EMAIL:    ${{ secrets.UNITY_EMAIL }}
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_LICENSE:  ${{ secrets.UNITY_LICENSE }}
 
   # インストーラーとZipの作成
   create-installer:
@@ -89,7 +106,10 @@ jobs:
     needs: [init, build-unity]
     uses: ./.github/workflows/create-installer.yml
     with:
-      version: ${{ needs.init.outputs.version }}
+      version:             ${{ needs.init.outputs.version }}
+      app-name:            ${{ needs.init.outputs.app-name }}
+      app-publisher:       ${{ needs.init.outputs.app-publisher }}
+      repo-url:            ${{ needs.init.outputs.repo-url }}
       unity-artifact-name: ${{ needs.build-unity.outputs.artifact-name }}
 
   # GitHubリリースの作成
@@ -100,7 +120,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+    outputs:
+      release-url: ${{ steps.create-release.outputs.url }}
+
     steps:
       - name: Download Release Artifacts
         uses: actions/download-artifact@v4
@@ -119,47 +141,52 @@ jobs:
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
 
       - name: Create Release
+        id: create-release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag_name }}
-          name: ApplauseLace ${{ steps.tag.outputs.tag_name }}
+          name: ${{ needs.init.outputs.app-name }} ${{ steps.tag.outputs.tag_name }}
           body: |
             ## ApplauseLace（拍手喝采チキンレース） ${{ steps.tag.outputs.tag_name }}
-            
+
             ### 📥 インストール・実行方法
-            * **インストーラー版 (推奨):**
-              1. 下の Assets から `ApplauseLace-Setup-v${{ needs.init.outputs.version }}.exe` をダウンロード
+            * **インストーラー版（推奨）:**
+              1. 下の Assets から `${{ needs.init.outputs.app-name }}-Setup-v${{ needs.init.outputs.version }}.exe` をダウンロード
               2. ダウンロードしたファイルを実行してインストール
-              3. スタートメニューやデスクトップのショートカットから「ApplauseLace」を起動
-            
+              3. スタートメニューやデスクトップのショートカットから起動
+
             * **Zipポータブル版:**
-              1. 下の Assets から `ApplauseLace-v${{ needs.init.outputs.version }}.zip` をダウンロード
-              2. 任意の場所に展開し、中にある `ApplauseLace.exe` を直接実行
-            
+              1. 下の Assets から `${{ needs.init.outputs.app-name }}-v${{ needs.init.outputs.version }}.zip` をダウンロード
+              2. 任意の場所に展開し、`${{ needs.init.outputs.app-name }}.exe` を直接実行
+
             ### 📝 ビルド情報
             - **バージョン**: ${{ needs.init.outputs.version }}
             - **ビルド番号**: #${{ github.run_number }}
-            
+
             ### 🔧 システム要件
-            - Windows 10/11 (64-bit)
+            - Windows 10/11（64-bit）
           files: |
-            artifacts/ApplauseLace-Setup-v${{ needs.init.outputs.version }}.exe
-            artifacts/ApplauseLace-v${{ needs.init.outputs.version }}.zip
-          draft: ${{ needs.init.outputs.is_draft == 'true' }}
+            artifacts/${{ needs.init.outputs.app-name }}-Setup-v${{ needs.init.outputs.version }}.exe
+            artifacts/${{ needs.init.outputs.app-name }}-v${{ needs.init.outputs.version }}.zip
+          draft:      ${{ needs.init.outputs.is_draft == 'true' }}
           prerelease: ${{ needs.init.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
 
   # 成功時の通知
   notify-success:
     name: Notify Success
-    needs: [init, release]
-    if: success()
+    needs: [init, create-installer, release]
+    if: |
+      always() &&
+      needs.create-installer.result == 'success' &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped')
     uses: ./.github/workflows/notify-discord.yml
     with:
-      status: "success"
-      version: ${{ needs.init.outputs.version }}
-      workflow-name: "ApplauseLace リリース"
-      job-name: "リリース作成完了"
+      status:        "success"
+      version:       ${{ needs.init.outputs.version }}
+      workflow-name: "${{ needs.init.outputs.app-name }} ビルド"
+      job-name:      ${{ needs.release.result == 'success' && 'リリース作成完了' || 'ビルド・パッケージ完了' }}
+      link-url:      ${{ needs.release.outputs.release-url || '' }}
     secrets:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
@@ -167,13 +194,20 @@ jobs:
   notify-failure:
     name: Notify Failure
     needs: [init, build-unity, create-installer, release]
-    if: failure()
+    if: |
+      always() &&
+      (
+        needs.build-unity.result     == 'failure' ||
+        needs.create-installer.result == 'failure' ||
+        needs.release.result          == 'failure'
+      )
     uses: ./.github/workflows/notify-discord.yml
     with:
-      status: "failure"
-      version: ${{ needs.init.outputs.version }}
-      workflow-name: "ApplauseLace ビルド"
-      job-name: "ビルドエラー"
+      status:        "failure"
+      version:       ${{ needs.init.outputs.version }}
+      workflow-name: "${{ needs.init.outputs.app-name }} ビルド"
+      job-name:      "ビルドエラー"
+      link-url:      ""
     secrets:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
@@ -184,9 +218,10 @@ jobs:
     if: cancelled()
     uses: ./.github/workflows/notify-discord.yml
     with:
-      status: "cancelled"
-      version: ${{ needs.init.outputs.version }}
-      workflow-name: "ApplauseLace ビルド"
-      job-name: "ビルドキャンセル"
+      status:        "cancelled"
+      version:       ${{ needs.init.outputs.version }}
+      workflow-name: "${{ needs.init.outputs.app-name }} ビルド"
+      job-name:      "ビルドキャンセル"
+      link-url:      ""
     secrets:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
