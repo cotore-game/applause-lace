@@ -375,6 +375,8 @@ MonoBehaviour:
   handImage: {fileID: 492446348}
   handOpenSprite: {fileID: 21300000, guid: e01da9183b7a71041a5683e09d8f813b, type: 3}
   handClosedSprite: {fileID: 21300000, guid: 6bb3a408be5fd9242aa8f4530665cb96, type: 3}
+  _rectTransform: {fileID: 0}
+  _originalScale: {x: 0, y: 0, z: 0}
 --- !u!1 &518969997
 GameObject:
   m_ObjectHideFlags: 0
@@ -793,6 +795,8 @@ MonoBehaviour:
     TypeName: 
   autoRun: 1
   autoInjectGameObjects: []
+  scopeName: 
+  <Parent>k__BackingField: {fileID: 0}
   gameView: {fileID: 129166073}
   stageList:
   - {fileID: 11400000, guid: a36d7452e02cd8d41b1e1915488cb4e8, type: 2}
@@ -841,11 +845,17 @@ MonoBehaviour:
   spotlightShape: {fileID: 770061828}
   softMask: {fileID: 1359067056}
   targetCanvas: {fileID: 1724019403}
-  overlayColor: {r: 0, g: 0, b: 0, a: 0.9019608}
+  overlayColor:
+    r: 0
+    g: 0
+    b: 0
+    a: 0.9019608
   initialRadius: 2000
   targetRadius: 256
   fadeInDuration: 0.8
   focusDuration: 0.6
+  _canvasGroup: {fileID: 0}
+  _rootRectTransform: {fileID: 0}
 --- !u!1 &1497016081
 GameObject:
   m_ObjectHideFlags: 0
@@ -1091,9 +1101,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 88797119}
     m_Modifications:
+    - target: {fileID: 1687398477977713686, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3766213823667165928, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
       propertyPath: m_Name
       value: UIHappyParticle
+      objectReference: {fileID: 0}
+    - target: {fileID: 3766213823667165928, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6798654828646210517, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
       propertyPath: m_Pivot.x
@@ -1185,6 +1203,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6798654828646210517, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8510879816952815558, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8708842485403309506, guid: fc051ac12f1d91d499bb07ebbf522aae, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -1416,6 +1442,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ResultView
       objectReference: {fileID: 0}
+    - target: {fileID: 7831080885972589487, guid: 0d34a48823997ac489a436c83bf8d8c9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1546,6 +1576,10 @@ PrefabInstance:
     - target: {fileID: 5759113159301258688, guid: 785e5f3b8f87a424d86b667ce5ab6505, type: 3}
       propertyPath: m_Name
       value: TitleView
+      objectReference: {fileID: 0}
+    - target: {fileID: 5759113159301258688, guid: 785e5f3b8f87a424d86b667ce5ab6505, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1977,6 +2011,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CurtainView
       objectReference: {fileID: 0}
+    - target: {fileID: 5157961810752847116, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7527169370612562917, guid: 1739cb6a3ef1a784fb0292c445fc9197, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -2293,6 +2331,10 @@ PrefabInstance:
     - target: {fileID: 8366096932379998742, guid: 37ff7f6b78fd4614d9f6e7a8d48480d7, type: 3}
       propertyPath: m_Name
       value: CountdownView
+      objectReference: {fileID: 0}
+    - target: {fileID: 8366096932379998742, guid: 37ff7f6b78fd4614d9f6e7a8d48480d7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8401902264851161689, guid: 37ff7f6b78fd4614d9f6e7a8d48480d7, type: 3}
       propertyPath: m_Pivot.x

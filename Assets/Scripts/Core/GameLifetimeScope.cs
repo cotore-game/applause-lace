@@ -8,7 +8,7 @@ public class GameLifetimeScope : LifetimeScope
 
     protected override void Configure(IContainerBuilder builder)
     {
-        // 幕のインスタンスをプロジェクト全体（常駐スコープ）に登録
+        // 幕のインスタンスをプロジェクト全体に登録
         builder.RegisterComponent(curtainController);
     }
 }

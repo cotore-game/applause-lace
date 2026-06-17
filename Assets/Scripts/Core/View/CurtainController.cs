@@ -8,18 +8,18 @@ using DG.Tweening;
 public class CurtainController : MonoBehaviour
 {
     [Header("幕の参照")]
-    [SerializeField] private RectTransform mainCurtain;     // 大幕
-    [SerializeField] private RectTransform topDecoration;   // 上部装飾カーテン
+    [SerializeField] private RectTransform mainCurtain; // 大幕
+    [SerializeField] private RectTransform topDecoration; // 上部装飾カーテン
 
     [Header("アニメーション設定")]
-    [SerializeField] private float anticipationDuration = 0.3f;     // 予備動作の時間
-    [SerializeField] private float anticipationDistance = 50f;      // 予備動作の距離（下方向）
-    [SerializeField] private float mainCurtainUpDuration = 1.0f;    // 大幕が上がる時間
-    [SerializeField] private float topDecorationUpDuration = 0.8f;  // 装飾が上がる時間
-    [SerializeField] private float topDecorationDelay = 0.5f;       // 装飾が動き始めるまでの遅延
-    [SerializeField] private float curtainDownDuration = 1.0f;      // 幕が降りる時間
-    [SerializeField] private Ease upEase = Ease.OutCubic;           // 上昇時のイージング
-    [SerializeField] private Ease downEase = Ease.InCubic;          // 下降時のイージング
+    [SerializeField] private float anticipationDuration = 0.3f; // 予備動作の時間
+    [SerializeField] private float anticipationDistance = 50f; // 予備動作の距離（下方向）
+    [SerializeField] private float mainCurtainUpDuration = 1.0f; // 大幕が上がる時間
+    [SerializeField] private float topDecorationUpDuration = 0.8f; // 装飾が上がる時間
+    [SerializeField] private float topDecorationDelay = 0.5f; // 装飾が動き始めるまでの遅延
+    [SerializeField] private float curtainDownDuration = 1.0f; // 幕が降りる時間
+    [SerializeField] private Ease upEase = Ease.OutCubic; // 上昇時のイージング
+    [SerializeField] private Ease downEase = Ease.InCubic; // 下降時のイージング
 
     private Vector2 mainCurtainInitialPos;
     private Vector2 topDecorationInitialPos;
@@ -78,19 +78,19 @@ public class CurtainController : MonoBehaviour
         // 大幕の目標位置（画面外上部 + 幕の高さ分）
         float mainCurtainTargetY = screenTop + mainCurtainHeight;
 
-        // 1. 予備動作：少し下に動く
+        // 少し下に動く
         sequence.Append(
             mainCurtain.DOAnchorPosY(mainCurtainInitialPos.y - anticipationDistance, anticipationDuration)
                 .SetEase(Ease.OutQuad)
         );
 
-        // 2. 大幕が上に上がる
+        // 大幕が上に上がる
         sequence.Append(
             mainCurtain.DOAnchorPosY(mainCurtainTargetY, mainCurtainUpDuration)
                 .SetEase(upEase)
         );
 
-        // 3. 装飾カーテンが遅れて上がる
+        // 装飾カーテンが遅れて上がる
         if (topDecoration != null)
         {
             float topDecorationTargetY = screenTop + topDecorationHeight;
