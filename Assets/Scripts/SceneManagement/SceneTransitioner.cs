@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
@@ -6,9 +8,11 @@ using Cysharp.Threading.Tasks;
 namespace SceneManagement
 {
     /// <summary>
-    /// シーン遷移を実行するシングルトンクラス。
-    /// データのTargetSceneIdとTransitionToのSceneIdが一致することを実行時に検証します。
-    /// SingleモードとAdditiveモードの両方に対応しています。
+    /// シーン遷移を実行するシングルトンクラス
+    /// Single / Additive ロード両対応
+    /// 非同期ロードの CancellationToken 対応
+    /// 二重遷移防止（Single モード）
+    /// Additive 並列ロードの競合対策
     /// </summary>
     public class SceneTransitioner : SingletonMonoBehaviour<SceneTransitioner>
     {
@@ -24,20 +28,27 @@ namespace SceneManagement
         /// </summary>
         public event Action<SceneId, string, LoadSceneMode> OnTransitionCompleted;
 
-        private SceneId? _currentTransitionSceneId;
-        private LoadSceneMode _currentLoadMode;
+        // 遷移中のシーン名セット（Additive並列ロード対応）
+        private readonly HashSet<string> _pendingSceneNames = new HashSet<string>();
+
+        // アクティブな遷移数（Additive では複数が同時進行する）
+        private int _activeTransitionCount = 0;
+
+        /// <summary>
+        /// 現在遷移中かどうか。
+        /// Single モードでは遷移前に必ず確認してください。
+        /// </summary>
+        public bool IsTransitioning => _activeTransitionCount > 0;
 
         protected override void OnInitialize()
         {
             base.OnInitialize();
 
-            // レジストリの検証
             if (!SceneRegistry.ValidateRegistry())
             {
                 Debug.LogError("[SceneTransitioner] SceneRegistry validation failed!");
             }
 
-            // シーンロード完了イベントをリッスン
             SceneManager.sceneLoaded += HandleSceneLoaded;
         }
 
@@ -48,24 +59,16 @@ namespace SceneManagement
         }
 
         /// <summary>
-        /// データなしでシーン遷移を実行します。（同期ロード）
+        /// データなしで同期シーン遷移を実行します。
         /// </summary>
-        /// <param name="sceneId">遷移先のシーンID</param>
-        /// <param name="mode">読み込みモード（Single/Additive）</param>
         public void TransitionTo(SceneId sceneId, LoadSceneMode mode = LoadSceneMode.Single)
         {
-            string sceneName = SceneRegistry.GetSceneName(sceneId);
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                Debug.LogError($"[SceneTransitioner] Failed to get scene name for SceneId: {sceneId}");
-                return;
-            }
+            if (!TryGetSceneName(sceneId, out string sceneName)) return;
+            if (!GuardSingleTransition(mode)) return;
 
-            Debug.Log($"[SceneTransitioner] Transition to '{sceneId}' ({sceneName}) without data (Sync, {mode})");
+            Debug.Log($"[SceneTransitioner] TransitionTo '{sceneId}' ({sceneName}) [{mode}]");
 
-            _currentTransitionSceneId = sceneId;
-            _currentLoadMode = mode;
-            OnTransitionStarted?.Invoke(sceneId, sceneName, "None", mode);
+            BeginTransition(sceneName, sceneId, "None", mode);
 
             try
             {
@@ -73,42 +76,26 @@ namespace SceneManagement
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SceneTransitioner] Failed to load scene '{sceneName}': {ex.Message}");
-                _currentTransitionSceneId = null;
+                Debug.LogError($"[SceneTransitioner] LoadScene failed: {ex.Message}");
+                AbortTransition(sceneName);
             }
         }
 
         /// <summary>
-        /// データありでシーン遷移を実行します。（同期ロード）
-        /// dataのTargetSceneIdとTransitionToのSceneIdが一致することを検証します。
+        /// データありで同期シーン遷移を実行します。
         /// </summary>
-        /// <typeparam name="TData">遷移時に渡すデータの型</typeparam>
-        /// <param name="sceneId">遷移先のシーンID</param>
-        /// <param name="data">遷移先に渡すデータ</param>
-        /// <param name="mode">読み込みモード（Single/Additive）</param>
         public void TransitionTo(SceneId sceneId, ISceneExchangeData data, LoadSceneMode mode = LoadSceneMode.Single)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data), "Transition data cannot be null.");
-            }
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (!TryGetSceneName(sceneId, out string sceneName)) return;
+            if (!GuardSingleTransition(mode)) return;
 
-            string sceneName = SceneRegistry.GetSceneName(sceneId);
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                Debug.LogError($"[SceneTransitioner] Failed to get scene name for SceneId: {sceneId}");
-                return;
-            }
-
-            string dataTypeName = data.GetType().Name;
-            Debug.Log($"[SceneTransitioner] Transition to '{sceneId}' ({sceneName}) with '{dataTypeName}' (Sync, {mode})");
-
-            // データをマネージャーに格納
             SceneExchangeManager.Instance.StoreData(data);
+            string dataTypeName = data.GetType().Name;
 
-            _currentTransitionSceneId = sceneId;
-            _currentLoadMode = mode;
-            OnTransitionStarted?.Invoke(sceneId, sceneName, dataTypeName, mode);
+            Debug.Log($"[SceneTransitioner] TransitionTo '{sceneId}' ({sceneName}) with '{dataTypeName}' [{mode}]");
+
+            BeginTransition(sceneName, sceneId, dataTypeName, mode);
 
             try
             {
@@ -116,9 +103,9 @@ namespace SceneManagement
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SceneTransitioner] Failed to load scene '{sceneName}': {ex.Message}");
+                Debug.LogError($"[SceneTransitioner] LoadScene failed: {ex.Message}");
                 SceneExchangeManager.Instance.ClearData(data);
-                _currentTransitionSceneId = null;
+                AbortTransition(sceneName);
             }
         }
 
@@ -126,139 +113,190 @@ namespace SceneManagement
         /// データなしで非同期シーン遷移を実行します。
         /// </summary>
         /// <param name="sceneId">遷移先のシーンID</param>
-        /// <param name="mode">読み込みモード（Single/Additive）</param>
-        /// <param name="progress">読み込み進捗コールバック(0.0～1.0)</param>
+        /// <param name="mode">読み込みモード（Single / Additive）</param>
+        /// <param name="progress">進捗コールバック (0.0 〜 1.0)</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
         public async UniTask TransitionToAsync(
             SceneId sceneId,
             LoadSceneMode mode = LoadSceneMode.Single,
-            IProgress<float> progress = null)
+            IProgress<float> progress = null,
+            CancellationToken cancellationToken = default)
         {
-            string sceneName = SceneRegistry.GetSceneName(sceneId);
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                Debug.LogError($"[SceneTransitioner] Failed to get scene name for SceneId: {sceneId}");
-                return;
-            }
+            if (!TryGetSceneName(sceneId, out string sceneName)) return;
+            if (!GuardSingleTransition(mode)) return;
 
-            Debug.Log($"[SceneTransitioner] Async transition to '{sceneId}' ({sceneName}) without data ({mode})");
+            Debug.Log($"[SceneTransitioner] TransitionToAsync '{sceneId}' ({sceneName}) [{mode}]");
 
-            _currentTransitionSceneId = sceneId;
-            _currentLoadMode = mode;
-            OnTransitionStarted?.Invoke(sceneId, sceneName, "None", mode);
+            BeginTransition(sceneName, sceneId, "None", mode);
 
             try
             {
-                await SceneManager.LoadSceneAsync(sceneName, mode).ToUniTask(progress);
+                await SceneManager.LoadSceneAsync(sceneName, mode)
+                    .ToUniTask(progress, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log($"[SceneTransitioner] Transition to '{sceneId}' was cancelled.");
+                AbortTransition(sceneName);
+                throw;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SceneTransitioner] Failed to load scene '{sceneName}': {ex.Message}");
-                _currentTransitionSceneId = null;
+                Debug.LogError($"[SceneTransitioner] LoadSceneAsync failed: {ex.Message}");
+                AbortTransition(sceneName);
             }
         }
 
         /// <summary>
         /// データありで非同期シーン遷移を実行します。
-        /// dataのTargetSceneIdとTransitionToAsyncのSceneIdが一致することを検証します。
         /// </summary>
         /// <typeparam name="TData">遷移時に渡すデータの型</typeparam>
         /// <param name="sceneId">遷移先のシーンID</param>
         /// <param name="data">遷移先に渡すデータ</param>
-        /// <param name="mode">読み込みモード（Single/Additive）</param>
-        /// <param name="progress">読み込み進捗コールバック(0.0～1.0)</param>
+        /// <param name="mode">読み込みモード（Single / Additive）</param>
+        /// <param name="progress">進捗コールバック (0.0 〜 1.0)</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
         public async UniTask TransitionToAsync<TData>(
             SceneId sceneId,
             TData data,
             LoadSceneMode mode = LoadSceneMode.Single,
-            IProgress<float> progress = null)
+            IProgress<float> progress = null,
+            CancellationToken cancellationToken = default)
             where TData : ISceneExchangeData
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data), "Transition data cannot be null.");
-            }
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (!TryGetSceneName(sceneId, out string sceneName)) return;
+            if (!GuardSingleTransition(mode)) return;
 
-            string sceneName = SceneRegistry.GetSceneName(sceneId);
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                Debug.LogError($"[SceneTransitioner] Failed to get scene name for SceneId: {sceneId}");
-                return;
-            }
-
-            string dataTypeName = typeof(TData).Name;
-            Debug.Log($"[SceneTransitioner] Async transition to '{sceneId}' ({sceneName}) with '{dataTypeName}' ({mode})");
-
-            // データをマネージャーに格納
             SceneExchangeManager.Instance.StoreData(data);
+            string dataTypeName = typeof(TData).Name;
 
-            _currentTransitionSceneId = sceneId;
-            _currentLoadMode = mode;
-            OnTransitionStarted?.Invoke(sceneId, sceneName, dataTypeName, mode);
+            Debug.Log($"[SceneTransitioner] TransitionToAsync '{sceneId}' ({sceneName}) with '{dataTypeName}' [{mode}]");
+
+            BeginTransition(sceneName, sceneId, dataTypeName, mode);
 
             try
             {
-                await SceneManager.LoadSceneAsync(sceneName, mode).ToUniTask(progress);
+                await SceneManager.LoadSceneAsync(sceneName, mode)
+                    .ToUniTask(progress, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log($"[SceneTransitioner] Transition to '{sceneId}' was cancelled.");
+                SceneExchangeManager.Instance.ClearData(data);
+                AbortTransition(sceneName);
+                throw;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SceneTransitioner] Failed to load scene '{sceneName}': {ex.Message}");
+                Debug.LogError($"[SceneTransitioner] LoadSceneAsync failed: {ex.Message}");
                 SceneExchangeManager.Instance.ClearData(data);
-                _currentTransitionSceneId = null;
+                AbortTransition(sceneName);
             }
         }
 
         /// <summary>
-        /// 指定したシーンをアンロードします（非同期）。
+        /// 指定したシーンを非同期でアンロードします。
         /// </summary>
         /// <param name="sceneId">アンロードするシーンID</param>
-        /// <param name="progress">読み込み進捗コールバック(0.0～1.0)</param>
-        public async UniTask UnloadSceneAsync(SceneId sceneId, IProgress<float> progress = null)
+        /// <param name="progress">進捗コールバック</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
+        public async UniTask UnloadSceneAsync(
+            SceneId sceneId,
+            IProgress<float> progress = null,
+            CancellationToken cancellationToken = default)
         {
-            string sceneName = SceneRegistry.GetSceneName(sceneId);
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                Debug.LogError($"[SceneTransitioner] Failed to get scene name for SceneId: {sceneId}");
-                return;
-            }
+            if (!TryGetSceneName(sceneId, out string sceneName)) return;
 
-            Debug.Log($"[SceneTransitioner] Unloading scene '{sceneId}' ({sceneName})");
+            Debug.Log($"[SceneTransitioner] UnloadSceneAsync '{sceneId}' ({sceneName})");
 
             try
             {
-                await SceneManager.UnloadSceneAsync(sceneName).ToUniTask(progress);
-                Debug.Log($"[SceneTransitioner] Scene unloaded: '{sceneId}' ({sceneName})");
+                await SceneManager.UnloadSceneAsync(sceneName)
+                    .ToUniTask(progress, cancellationToken: cancellationToken);
+
+                Debug.Log($"[SceneTransitioner] Unloaded: '{sceneId}' ({sceneName})");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log($"[SceneTransitioner] Unload of '{sceneId}' was cancelled.");
+                throw;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SceneTransitioner] Failed to unload scene '{sceneName}': {ex.Message}");
+                Debug.LogError($"[SceneTransitioner] UnloadSceneAsync failed: {ex.Message}");
             }
         }
 
         /// <summary>
         /// 指定したシーンが現在ロードされているかを確認します。
         /// </summary>
-        /// <param name="sceneId">確認するシーンID</param>
-        /// <returns>シーンがロードされている場合はtrue</returns>
         public bool IsSceneLoaded(SceneId sceneId)
         {
-            string sceneName = SceneRegistry.GetSceneName(sceneId);
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                return false;
-            }
-
-            Scene scene = SceneManager.GetSceneByName(sceneName);
-            return scene.isLoaded;
+            if (!TryGetSceneName(sceneId, out string sceneName)) return false;
+            return SceneManager.GetSceneByName(sceneName).isLoaded;
         }
+
+        #region Private Methods
 
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (_currentTransitionSceneId.HasValue)
+            if (_pendingSceneNames.Remove(scene.name))
             {
-                Debug.Log($"[SceneTransitioner] Scene loaded: {_currentTransitionSceneId.Value} ({scene.name}, {mode})");
-                OnTransitionCompleted?.Invoke(_currentTransitionSceneId.Value, scene.name, _currentLoadMode);
-                _currentTransitionSceneId = null;
+                _activeTransitionCount = Math.Max(0, _activeTransitionCount - 1);
+
+                SceneId? sceneId = SceneRegistry.GetSceneId(scene.name);
+                if (sceneId.HasValue)
+                {
+                    OnTransitionCompleted?.Invoke(sceneId.Value, scene.name, mode);
+                }
+
+                Debug.Log($"[SceneTransitioner] Scene loaded: {scene.name} [{mode}] (remaining: {_activeTransitionCount})");
             }
         }
+
+        /// <summary>
+        /// Single モード時の二重遷移ガード。
+        /// Additive は並列遷移を許容するためガードしない。
+        /// </summary>
+        private bool GuardSingleTransition(LoadSceneMode mode)
+        {
+            if (mode == LoadSceneMode.Single && IsTransitioning)
+            {
+                Debug.LogWarning("[SceneTransitioner] Already transitioning in Single mode. Ignored.");
+                return false;
+            }
+            return true;
+        }
+
+        private void BeginTransition(string sceneName, SceneId sceneId, string dataTypeName, LoadSceneMode mode)
+        {
+            _pendingSceneNames.Add(sceneName);
+            _activeTransitionCount++;
+
+            SceneId? id = SceneRegistry.GetSceneId(sceneName);
+            OnTransitionStarted?.Invoke(sceneId, sceneName, dataTypeName, mode);
+        }
+
+        private void AbortTransition(string sceneName)
+        {
+            if (_pendingSceneNames.Remove(sceneName))
+            {
+                _activeTransitionCount = Math.Max(0, _activeTransitionCount - 1);
+            }
+        }
+
+        private bool TryGetSceneName(SceneId sceneId, out string sceneName)
+        {
+            sceneName = SceneRegistry.GetSceneName(sceneId);
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                Debug.LogError($"[SceneTransitioner] No scene name found for SceneId: {sceneId}");
+                return false;
+            }
+            return true;
+        }
+
+        #endregion
     }
 }
