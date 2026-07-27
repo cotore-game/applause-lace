@@ -2,7 +2,6 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
 
 public class ClapGameplayManager
@@ -10,9 +9,9 @@ public class ClapGameplayManager
     private readonly ClapGameModel _model;
     private readonly ClapStageData _stageData;
 
-    // 今回のプレイで決定された動的な時間
-    private float _currentTargetTime;
-    private float _currentLimitTime;
+    private float _clapDeadline;
+    private float _roundEndTime;
+    private float _roundStartedAt;
 
     public ClapGameplayManager(ClapGameModel model, ClapStageData stageData)
     {
@@ -20,67 +19,72 @@ public class ClapGameplayManager
         _stageData = stageData;
     }
 
-    public async UniTask<bool> StartGameAsync(CancellationToken token)
+    public async UniTask<ClapRoundResult> StartGameAsync(CancellationToken token)
     {
-        _model.Reset();
+        _model.StartRound();
 
-        // 乱数で今回のターゲット時間を決定 [baseTime - randomRange, baseTime + randomRange] の範囲
-        _currentTargetTime = _stageData.baseTime + Random.Range(-_stageData.randomRange, _stageData.randomRange);
-        _currentLimitTime = _currentTargetTime + _stageData.limitOffset;
+        _clapDeadline = _stageData.baseTime
+                        + Random.Range(-_stageData.randomRange, _stageData.randomRange);
+        _roundEndTime = _clapDeadline + _stageData.limitOffset;
+        _roundStartedAt = Time.time;
 
         Debug.Log($"[ゲーム開始] 基本: {_stageData.baseTime}秒 (ブレ: +-{_stageData.randomRange}秒)");
-        Debug.Log($"[今回の目標] ターゲット: {_currentTargetTime:F2}秒 / 限界アウト: {_currentLimitTime:F2}秒");
+        Debug.Log($"[内部判定] 拍手期限: {_clapDeadline:F2}秒 / ラウンド終了: {_roundEndTime:F2}秒");
 
-        while (!_model.IsGameOver && !_model.IsSuccess)
+        while (_model.Phase == ClapRoundPhase.Playing)
         {
-            if (token.IsCancellationRequested) return false;
+            token.ThrowIfCancellationRequested();
 
-            _model.ElapsedTime += Time.deltaTime;
+            float elapsedTime = Time.time - _roundStartedAt;
+            _model.UpdateElapsedTime(elapsedTime);
 
-            // Input Systemでの入力検知 (Spaceキー または マウス左クリック/画面タップ)
-            bool isClapPressed = (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame) ||
-                                 (Pointer.current != null && Pointer.current.press.wasPressedThisFrame);
-
-            if (isClapPressed)
+            if (elapsedTime >= _roundEndTime)
             {
-                OnClap();
-            }
-
-            // プレイヤーが叩かないまま限界時間を超えたら自動アウト
-            if (_model.ElapsedTime > _currentLimitTime)
-            {
-                _model.IsGameOver = true;
-                Debug.Log($"[GameOver] 限界時間を超過！ 拍手回数: {_model.ClapCount}");
+                _model.FinishRound();
+                break;
             }
 
             await UniTask.Yield(PlayerLoopTiming.Update, token);
         }
 
-        return _model.IsSuccess;
+        ClapRoundResult result = new(
+            _stageData.stageNumber,
+            _model.ClapCount,
+            _model.IsGameOver);
+
+        Debug.Log(
+            $"[タイムアップ] 拍手回数: {result.RawClapCount} / "
+            + $"ゲームオーバー: {result.IsGameOver} / スコア: {result.Score}");
+
+        return result;
     }
 
-    private void OnClap()
+    public bool TryClap()
     {
-        if (_model.IsGameOver || _model.IsSuccess) return;
-
-        _model.ClapCount++;
-        Debug.Log($"[拍手] 回数: {_model.ClapCount} | 経過時間: {_model.ElapsedTime:F2}秒");
-
-        // 限界時間を超えた状態で叩いた場合もアウト
-        if (_model.ElapsedTime > _currentLimitTime)
+        if (_model.Phase != ClapRoundPhase.Playing)
         {
-            _model.IsGameOver = true;
-            Debug.Log($"[ゲームオーバー] 限界時間 {_currentLimitTime:F2}秒 を過ぎて叩きました。");
+            return false;
         }
-    }
 
-    public void ForceSuccess()
-    {
-        if (_model.IsGameOver) return;
-        _model.IsSuccess = true;
+        float elapsedTime = Time.time - _roundStartedAt;
+        _model.UpdateElapsedTime(elapsedTime);
 
-        // ターゲット時間からどれだけギリギリを攻められたか計算
-        float diff = _currentTargetTime - _model.ElapsedTime;
-        Debug.Log($"[ステージクリア] セーフで終了！ 記録: {_model.ClapCount}回 (ターゲットとの差: {diff:F2}秒)");
+        if (elapsedTime >= _roundEndTime)
+        {
+            return false;
+        }
+
+        bool isOvertime = elapsedTime > _clapDeadline;
+        bool wasGameOver = _model.IsGameOver;
+        _model.RegisterClap(isOvertime);
+
+        Debug.Log($"[拍手] 回数: {_model.ClapCount} | 経過時間: {elapsedTime:F2}秒");
+
+        if (!wasGameOver && _model.IsGameOver)
+        {
+            Debug.Log($"[ゲームオーバー確定] 拍手期限 {_clapDeadline:F2}秒を超えて拍手しました。");
+        }
+
+        return true;
     }
 }

@@ -2,9 +2,8 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using VContainer.Unity;
 
-public class ClapPresenter : IAsyncStartable, ITickable, IDisposable
+public class ClapPresenter : IDisposable
 {
     private readonly ClapGameplayManager _manager;
     private readonly ClapGameModel _model;
@@ -17,49 +16,42 @@ public class ClapPresenter : IAsyncStartable, ITickable, IDisposable
         _view = view;
     }
 
-    public async UniTask StartAsync(CancellationToken cancellationToken)
+    public async UniTask<ClapRoundResult> PlayAsync(CancellationToken cancellationToken)
     {
         _view.ResetView();
-        _view.OnStopButtonClicked += OnStopRequested;
+        _view.OnClapButtonClicked += OnClapRequested;
 
-        // ゲームループ開始
-        bool isSuccess = await _manager.StartGameAsync(cancellationToken);
+        ClapRoundResult result = await _manager.StartGameAsync(cancellationToken);
 
-        // ループを抜けたら（ゲームが終了したら）結果を表示
-        if (_model.IsGameOver)
+        if (result.IsGameOver)
         {
-            _view.ShowResult("GAME OVER\n(Time Out!)", Color.red);
+            _view.ShowResult(
+                $"GAME OVER\nClap: {result.RawClapCount}\nScore: 0",
+                Color.red);
         }
-        else if (isSuccess)
+        else
         {
-            _view.ShowResult($"STAGE CLEAR!\nClap: {_model.ClapCount}", Color.green);
+            _view.ShowResult(
+                $"TIME UP!\nClap: {result.RawClapCount}",
+                Color.green);
         }
+
+        return result;
     }
 
-    /// <summary>
-    /// 毎フレーム更新される処理。ゲームが終了していない場合、最新の拍手回数をViewに反映する。
-    /// </summary>
-    public void Tick()
+    private void OnClapRequested()
     {
-        if (_model == null || _model.IsGameOver || _model.IsSuccess) return;
-
-        // 毎フレーム、最新の拍手回数をViewに反映
-        _view.UpdateClapCount(_model.ClapCount);
-    }
-
-    /// <summary>
-    /// ストップ処理
-    /// </summary>
-    private void OnStopRequested()
-    {
-        _manager.ForceSuccess();
+        if (_manager.TryClap())
+        {
+            _view.UpdateClapCount(_model.ClapCount);
+        }
     }
 
     public void Dispose()
     {
         if (_view != null)
         {
-            _view.OnStopButtonClicked -= OnStopRequested;
+            _view.OnClapButtonClicked -= OnClapRequested;
         }
     }
 }

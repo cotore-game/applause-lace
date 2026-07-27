@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Serialization;
 using TMPro;
 using System;
 
@@ -7,15 +8,25 @@ public class ClapStageView : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI clapCountText;
     [SerializeField] private TextMeshProUGUI resultText;
-    [SerializeField] private Button stopButton;
+    [FormerlySerializedAs("stopButton")]
+    [SerializeField] private Button clapButton;
 
-    // ボタンが押されたことをPresenterに通知するためのイベント
-    public event Action OnStopButtonClicked;
+    public event Action OnClapButtonClicked;
 
     private void Awake()
     {
-        stopButton.onClick.AddListener(() => OnStopButtonClicked?.Invoke());
-        resultText.text = ""; // 初期化
+        clapButton.onClick.AddListener(HandleClapButtonClicked);
+        resultText.text = "";
+    }
+
+    private void OnDestroy()
+    {
+        clapButton.onClick.RemoveListener(HandleClapButtonClicked);
+    }
+
+    private void HandleClapButtonClicked()
+    {
+        OnClapButtonClicked?.Invoke();
     }
 
     public void UpdateClapCount(int count)
@@ -27,13 +38,13 @@ public class ClapStageView : MonoBehaviour
     {
         resultText.text = message;
         resultText.color = color;
-        stopButton.interactable = false; // 終了したらボタンを押せなくする
+        clapButton.interactable = false;
     }
 
     public void ResetView()
     {
         clapCountText.text = "Clap: 0";
         resultText.text = "";
-        stopButton.interactable = true;
+        clapButton.interactable = true;
     }
 }
