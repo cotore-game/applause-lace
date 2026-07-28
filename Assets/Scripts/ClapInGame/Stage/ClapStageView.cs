@@ -1,50 +1,119 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Serialization;
-using TMPro;
 using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
 
-public class ClapStageView : MonoBehaviour
+public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
 {
-    [SerializeField] private TextMeshProUGUI clapCountText;
-    [SerializeField] private TextMeshProUGUI resultText;
-    [FormerlySerializedAs("stopButton")]
-    [SerializeField] private Button clapButton;
+    [Header("ゲーム中Prefab")]
+    [SerializeField] private ClapHandButtonView clapHandButton;
+    [SerializeField] private CountPanelView countPanel;
+    [SerializeField] private CountdownView countdown;
+
+    [Header("ADV Prefab")]
+    [SerializeField] private DialogueView dialogue;
+    [SerializeField] private StageDialogueEventView dialogueEvents;
+
+    [Header("ステージ演出Prefab")]
+    [SerializeField] private StageAnimationView stageSign;
+    [SerializeField] private HostCutInView hostCutInStart;
+    [SerializeField] private HostCutInView hostCutInFinish;
+    [SerializeField] private StageResultView result;
+
+    public CountdownView Countdown => countdown;
+    public DialogueView Dialogue => dialogue;
+    public StageDialogueEventView DialogueEvents => dialogueEvents;
 
     public event Action OnClapButtonClicked;
 
     private void Awake()
     {
-        clapButton.onClick.AddListener(HandleClapButtonClicked);
-        resultText.text = "";
+        if (clapHandButton != null)
+        {
+            clapHandButton.OnClapCompleted += HandleClapCompleted;
+        }
     }
 
     private void OnDestroy()
     {
-        clapButton.onClick.RemoveListener(HandleClapButtonClicked);
+        if (clapHandButton != null)
+        {
+            clapHandButton.OnClapCompleted -= HandleClapCompleted;
+        }
     }
 
-    private void HandleClapButtonClicked()
+    public void PrepareStage()
     {
-        OnClapButtonClicked?.Invoke();
+        UpdateClapCount(0);
+        SetClapInputEnabled(false);
+        clapHandButton?.SetVisible(false);
+        countPanel?.SetVisible(false);
+        countdown?.Prepare();
+        dialogue?.Hide();
+        stageSign?.Prepare();
+        hostCutInStart?.Prepare();
+        hostCutInFinish?.Prepare();
+        result?.Prepare();
+    }
+
+    public void BeginGameplay()
+    {
+        UpdateClapCount(0);
+        countPanel?.SetVisible(true);
+        clapHandButton?.SetVisible(true);
+        SetClapInputEnabled(true);
+    }
+
+    public void EndGameplay()
+    {
+        SetClapInputEnabled(false);
+        clapHandButton?.SetVisible(false);
+        countPanel?.SetVisible(false);
     }
 
     public void UpdateClapCount(int count)
     {
-        clapCountText.text = $"Clap: {count}";
+        countPanel?.SetCount(count);
     }
 
-    public void ShowResult(string message, Color color)
+    public void SetClapInputEnabled(bool enabled)
     {
-        resultText.text = message;
-        resultText.color = color;
-        clapButton.interactable = false;
+        clapHandButton?.SetInputEnabled(enabled);
     }
 
-    public void ResetView()
+    public UniTask PlayStageSignAsync(CancellationToken cancellationToken)
     {
-        clapCountText.text = "Clap: 0";
-        resultText.text = "";
-        clapButton.interactable = true;
+        return stageSign != null
+            ? stageSign.PlayAsync(cancellationToken)
+            : UniTask.CompletedTask;
+    }
+
+    public UniTask PlayStartCutInAsync(CancellationToken cancellationToken)
+    {
+        return hostCutInStart != null
+            ? hostCutInStart.PlayAsync(cancellationToken)
+            : UniTask.CompletedTask;
+    }
+
+    public UniTask PlayFinishCutInAsync(CancellationToken cancellationToken)
+    {
+        return hostCutInFinish != null
+            ? hostCutInFinish.PlayAsync(cancellationToken)
+            : UniTask.CompletedTask;
+    }
+
+    public UniTask ShowResultAsync(
+        ClapRoundResult roundResult,
+        ClapStageData stageData,
+        CancellationToken cancellationToken)
+    {
+        return result != null
+            ? result.ShowAsync(roundResult, stageData, cancellationToken)
+            : UniTask.CompletedTask;
+    }
+
+    private void HandleClapCompleted()
+    {
+        OnClapButtonClicked?.Invoke();
     }
 }

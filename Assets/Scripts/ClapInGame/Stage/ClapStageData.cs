@@ -1,12 +1,42 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "ClapStageData", menuName = "Game/ClapStageData")]
-public class ClapStageData : ScriptableObject
+public sealed class ClapStageData : ScriptableObject
 {
-    public int stageNumber;
+    [Header("ステージ情報")]
+    [SerializeField, Min(1)] private int stageNumber = 1;
+    [SerializeField] private string stageTitle;
 
     [Header("チキンレース時間設定")]
-    public float baseTime = 5.0f; // 拍手してよい基本時間
-    public float randomRange = 0.5f; // 拍手期限の±ブレ幅
-    public float limitOffset = 0.5f; // 拍手期限からラウンド終了までの時間
+    [SerializeField, Min(0f)] private float baseTime = 5.0f;
+    [SerializeField, Min(0f)] private float randomRange = 0.5f;
+    [SerializeField, Min(0f)] private float limitOffset = 0.5f;
+
+    [Header("セリフパート")]
+    [SerializeField] private StageDialogueData dialogue;
+
+    [Header("リザルト文言")]
+    [SerializeField] private string timeUpHeadline = "TIME UP!";
+    [SerializeField, TextArea] private string timeUpComment;
+    [SerializeField] private string gameOverHeadline = "GAME OVER";
+    [SerializeField, TextArea] private string gameOverComment;
+
+    public int StageNumber => stageNumber;
+    public string StageTitle => stageTitle;
+
+    public float BaseTime => baseTime;
+    public float RandomRange => randomRange;
+    public float LimitOffset => limitOffset;
+
+    public StageDialogueData Dialogue => dialogue;
+
+    public string TimeUpHeadline => timeUpHeadline;
+    public string TimeUpComment => timeUpComment;
+    public string GameOverHeadline => gameOverHeadline;
+    public string GameOverComment => gameOverComment;
+
+    private void OnValidate()
+    {
+        randomRange = Mathf.Min(randomRange, baseTime);
+    }
 }
