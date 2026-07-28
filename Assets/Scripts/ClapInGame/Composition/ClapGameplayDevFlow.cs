@@ -4,21 +4,19 @@ using VContainer.Unity;
 
 public sealed class ClapGameplayDevFlow : IAsyncStartable
 {
-    private readonly CurtainController _curtain;
-    private readonly ClapPresenter _presenter;
+    private readonly ClapStageData _stageData;
+    private readonly ClapStageSequence _stageSequence;
 
     public ClapGameplayDevFlow(
-        CurtainController curtain,
-        ClapPresenter presenter)
+        ClapStageData stageData,
+        ClapStageSequence stageSequence)
     {
-        _curtain = curtain;
-        _presenter = presenter;
+        _stageData = stageData;
+        _stageSequence = stageSequence;
     }
 
     public async UniTask StartAsync(CancellationToken cancellationToken)
     {
-        await _curtain.OpenCurtainAsync();
-        cancellationToken.ThrowIfCancellationRequested();
-        await _presenter.PlayAsync(cancellationToken);
+        await _stageSequence.PlayAsync(_stageData, cancellationToken);
     }
 }
