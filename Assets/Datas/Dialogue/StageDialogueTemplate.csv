@@ -1,0 +1,4 @@
+Order,Speaker,Expression,Text,Event,EventArgument
+1,Host,Smile,それでは皆様！盛大な拍手を！,None,
+2,Performer,Neutral,よろしくお願いします。,None,
+3,Host,Excited,画面を押して拍手を送ってください。,ShowClapButton,
