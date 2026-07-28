@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 
 public class ClapPresenter : IDisposable
 {
@@ -16,27 +15,22 @@ public class ClapPresenter : IDisposable
         _view = view;
     }
 
-    public async UniTask<ClapRoundResult> PlayAsync(CancellationToken cancellationToken)
+    public async UniTask<ClapRoundResult> PlayAsync(
+        ClapStageData stageData,
+        CancellationToken cancellationToken)
     {
-        _view.ResetView();
+        _view.BeginGameplay();
         _view.OnClapButtonClicked += OnClapRequested;
 
-        ClapRoundResult result = await _manager.StartGameAsync(cancellationToken);
-
-        if (result.IsGameOver)
+        try
         {
-            _view.ShowResult(
-                $"GAME OVER\nClap: {result.RawClapCount}\nScore: 0",
-                Color.red);
+            return await _manager.StartGameAsync(stageData, cancellationToken);
         }
-        else
+        finally
         {
-            _view.ShowResult(
-                $"TIME UP!\nClap: {result.RawClapCount}",
-                Color.green);
+            _view.OnClapButtonClicked -= OnClapRequested;
+            _view.EndGameplay();
         }
-
-        return result;
     }
 
     private void OnClapRequested()
@@ -49,9 +43,6 @@ public class ClapPresenter : IDisposable
 
     public void Dispose()
     {
-        if (_view != null)
-        {
-            _view.OnClapButtonClicked -= OnClapRequested;
-        }
+        _view.OnClapButtonClicked -= OnClapRequested;
     }
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -7,28 +6,28 @@ using Random = UnityEngine.Random;
 public class ClapGameplayManager
 {
     private readonly ClapGameModel _model;
-    private readonly ClapStageData _stageData;
 
     private float _clapDeadline;
     private float _roundEndTime;
     private float _roundStartedAt;
 
-    public ClapGameplayManager(ClapGameModel model, ClapStageData stageData)
+    public ClapGameplayManager(ClapGameModel model)
     {
         _model = model;
-        _stageData = stageData;
     }
 
-    public async UniTask<ClapRoundResult> StartGameAsync(CancellationToken token)
+    public async UniTask<ClapRoundResult> StartGameAsync(
+        ClapStageData stageData,
+        CancellationToken token)
     {
         _model.StartRound();
 
-        _clapDeadline = _stageData.baseTime
-                        + Random.Range(-_stageData.randomRange, _stageData.randomRange);
-        _roundEndTime = _clapDeadline + _stageData.limitOffset;
+        _clapDeadline = stageData.BaseTime
+                        + Random.Range(-stageData.RandomRange, stageData.RandomRange);
+        _roundEndTime = _clapDeadline + stageData.LimitOffset;
         _roundStartedAt = Time.time;
 
-        Debug.Log($"[ゲーム開始] 基本: {_stageData.baseTime}秒 (ブレ: +-{_stageData.randomRange}秒)");
+        Debug.Log($"[ゲーム開始] 基本: {stageData.BaseTime}秒 (ブレ: +-{stageData.RandomRange}秒)");
         Debug.Log($"[内部判定] 拍手期限: {_clapDeadline:F2}秒 / ラウンド終了: {_roundEndTime:F2}秒");
 
         while (_model.Phase == ClapRoundPhase.Playing)
@@ -48,7 +47,7 @@ public class ClapGameplayManager
         }
 
         ClapRoundResult result = new(
-            _stageData.stageNumber,
+            stageData.StageNumber,
             _model.ClapCount,
             _model.IsGameOver);
 
