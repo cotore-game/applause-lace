@@ -7,6 +7,9 @@ public sealed class ClapStageData : ScriptableObject
     [SerializeField, Min(1)] private int stageNumber = 1;
     [SerializeField] private string stageTitle;
 
+    [Header("ステージ看板")]
+    [SerializeField] private Sprite stageSignSprite;
+
     [Header("チキンレース時間設定")]
     [SerializeField, Min(0f)] private float baseTime = 5.0f;
     [SerializeField, Min(0f)] private float randomRange = 0.5f;
@@ -23,6 +26,7 @@ public sealed class ClapStageData : ScriptableObject
 
     public int StageNumber => stageNumber;
     public string StageTitle => stageTitle;
+    public Sprite StageSignSprite => stageSignSprite;
 
     public float BaseTime => baseTime;
     public float RandomRange => randomRange;
