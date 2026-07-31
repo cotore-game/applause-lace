@@ -32,7 +32,6 @@ namespace SceneManagement
             // ここにシーンのマッピングを定義
             // ========================================
             Register(SceneId.Title, "TitleScene");
-            Register(SceneId.InGame, "InGameScene");
             Register(SceneId.Result, "ResultScene");
 
             _isInitialized = true;
