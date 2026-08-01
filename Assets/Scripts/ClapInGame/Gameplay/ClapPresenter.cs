@@ -38,6 +38,7 @@ public class ClapPresenter : IDisposable
         if (_manager.TryClap())
         {
             _view.UpdateClapCount(_model.ClapCount);
+            _view.PlayClapEffect();
         }
     }
 

@@ -9,6 +9,7 @@ public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
     [SerializeField] private ClapHandButtonView clapHandButton;
     [SerializeField] private CountPanelView countPanel;
     [SerializeField] private CountdownView countdown;
+    [SerializeField] private ClapConfettiView confetti;
 
     [Header("ADV Prefab")]
     [SerializeField] private DialogueView dialogue;
@@ -48,6 +49,7 @@ public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
         clapHandButton?.SetVisible(false);
         countPanel?.SetVisible(false);
         countdown?.Prepare();
+        confetti?.Prepare();
         dialogue?.Hide();
         hostCutInStart?.Prepare();
         hostCutInFinish?.Prepare();
@@ -72,6 +74,12 @@ public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
     public void UpdateClapCount(int count)
     {
         countPanel?.SetCount(count);
+    }
+
+    /// <summary>成立した拍手に対応する視覚効果を1回再生します。</summary>
+    public void PlayClapEffect()
+    {
+        confetti?.PlayBurst();
     }
 
     public void SetClapInputEnabled(bool enabled)
