@@ -169,6 +169,7 @@ MonoBehaviour:
   autoRun: 1
   autoInjectGameObjects: []
   curtainController: {fileID: 1315326886}
+  stageSignView: {fileID: 5241330176364472683}
 --- !u!81 &100544340
 AudioListener:
   m_ObjectHideFlags: 0
@@ -785,6 +786,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fd3143ccc6c3c7e48ae49873ed94f025, type: 3}
+--- !u!114 &5241330176364472683 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3285481021100580559, guid: fd3143ccc6c3c7e48ae49873ed94f025, type: 3}
+  m_PrefabInstance: {fileID: 5241330176364472682}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ade5e5f64a4d4f469841ae0235327a28, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

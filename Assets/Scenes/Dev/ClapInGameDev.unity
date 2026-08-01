@@ -334,7 +334,7 @@ MonoBehaviour:
     TypeName: GameLifetimeScope
   autoRun: 1
   autoInjectGameObjects: []
-  stageData: {fileID: 11400000, guid: bda8d7deca3f7854ea19cd5df251a5ef, type: 2}
+  stageData: {fileID: 11400000, guid: 2c4f6e61e6725a54eb6bbc43288fe409, type: 2}
   stageView: {fileID: 1539824290}
 --- !u!114 &449599724 stripped
 MonoBehaviour:
