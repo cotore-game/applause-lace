@@ -5,10 +5,11 @@ using UnityEngine;
 public class GameLifetimeScope : LifetimeScope
 {
     [SerializeField] private CurtainController curtainController;
+    [SerializeField] private StageSignView stageSignView;
 
     protected override void Configure(IContainerBuilder builder)
     {
-        // 幕のインスタンスをプロジェクト全体に登録
         builder.RegisterComponent(curtainController);
+        builder.RegisterComponent(stageSignView);
     }
 }

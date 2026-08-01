@@ -4,8 +4,8 @@ using Cysharp.Threading.Tasks;
 public interface IClapStageSceneView
 {
     void PrepareStage();
-    UniTask PlayStageSignAsync(CancellationToken cancellationToken);
-    UniTask PlayStartCutInAsync(CancellationToken cancellationToken);
+    void ShowStartCutIn();
+    void HideStartCutIn();
     UniTask PlayFinishCutInAsync(CancellationToken cancellationToken);
     UniTask ShowResultAsync(
         ClapRoundResult result,
@@ -19,14 +19,12 @@ public sealed class NullClapStageSceneView : IClapStageSceneView
     {
     }
 
-    public UniTask PlayStageSignAsync(CancellationToken cancellationToken)
+    public void ShowStartCutIn()
     {
-        return UniTask.CompletedTask;
     }
 
-    public UniTask PlayStartCutInAsync(CancellationToken cancellationToken)
+    public void HideStartCutIn()
     {
-        return UniTask.CompletedTask;
     }
 
     public UniTask PlayFinishCutInAsync(CancellationToken cancellationToken)

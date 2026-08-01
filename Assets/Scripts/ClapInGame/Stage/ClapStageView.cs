@@ -15,7 +15,6 @@ public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
     [SerializeField] private StageDialogueEventView dialogueEvents;
 
     [Header("ステージ演出Prefab")]
-    [SerializeField] private StageAnimationView stageSign;
     [SerializeField] private HostCutInView hostCutInStart;
     [SerializeField] private HostCutInView hostCutInFinish;
     [SerializeField] private StageResultView result;
@@ -50,7 +49,6 @@ public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
         countPanel?.SetVisible(false);
         countdown?.Prepare();
         dialogue?.Hide();
-        stageSign?.Prepare();
         hostCutInStart?.Prepare();
         hostCutInFinish?.Prepare();
         result?.Prepare();
@@ -81,18 +79,14 @@ public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
         clapHandButton?.SetInputEnabled(enabled);
     }
 
-    public UniTask PlayStageSignAsync(CancellationToken cancellationToken)
+    public void ShowStartCutIn()
     {
-        return stageSign != null
-            ? stageSign.PlayAsync(cancellationToken)
-            : UniTask.CompletedTask;
+        hostCutInStart?.Show();
     }
 
-    public UniTask PlayStartCutInAsync(CancellationToken cancellationToken)
+    public void HideStartCutIn()
     {
-        return hostCutInStart != null
-            ? hostCutInStart.PlayAsync(cancellationToken)
-            : UniTask.CompletedTask;
+        hostCutInStart?.Hide();
     }
 
     public UniTask PlayFinishCutInAsync(CancellationToken cancellationToken)

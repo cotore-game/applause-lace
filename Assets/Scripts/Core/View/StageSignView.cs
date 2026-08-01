@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
@@ -6,6 +7,8 @@ using UnityEngine.UI;
 
 public sealed class StageSignView : MonoBehaviour
 {
+    private const float MinimumAllowedDisplaySeconds = 2f;
+
     [Header("看板の参照")]
     [SerializeField] private RectTransform stageSignRect;
     [SerializeField] private Image stageSignImage;
@@ -17,6 +20,12 @@ public sealed class StageSignView : MonoBehaviour
     [Header("登場アニメーション")]
     [SerializeField, Min(0f)] private float enterDuration = 0.5f;
     [SerializeField] private Ease enterEase = Ease.OutBack;
+    [SerializeField, Min(MinimumAllowedDisplaySeconds)]
+    private float minimumDisplaySeconds = MinimumAllowedDisplaySeconds;
+
+    [Header("退場アニメーション")]
+    [SerializeField, Min(0f)] private float exitDuration = 0.5f;
+    [SerializeField] private Ease exitEase = Ease.InBack;
 
     private bool _isPlaying;
 
@@ -39,7 +48,7 @@ public sealed class StageSignView : MonoBehaviour
         SetVisible(false);
     }
 
-    public async UniTask PlayAsync(
+    public async UniTask EnterAsync(
         Sprite stageSignSprite,
         CancellationToken cancellationToken)
     {
@@ -69,15 +78,65 @@ public sealed class StageSignView : MonoBehaviour
 
         try
         {
+            UniTask minimumDisplayTask = UniTask.Delay(
+                TimeSpan.FromSeconds(
+                    Mathf.Max(MinimumAllowedDisplaySeconds, minimumDisplaySeconds)),
+                cancellationToken: cancellationToken);
+
             if (enterDuration <= 0f)
             {
                 stageSignRect.localPosition = shownPosition.localPosition;
+                await minimumDisplayTask;
+                return;
+            }
+
+            UniTask enterTask = stageSignRect
+                .DOLocalMove(shownPosition.localPosition, enterDuration)
+                .SetEase(enterEase)
+                .ToUniTask(
+                    TweenCancelBehaviour.KillAndCancelAwait,
+                    cancellationToken);
+
+            await UniTask.WhenAll(enterTask, minimumDisplayTask);
+        }
+        finally
+        {
+            _isPlaying = false;
+        }
+    }
+
+    public async UniTask ExitAsync(CancellationToken cancellationToken)
+    {
+        if (!HasRequiredReferences())
+        {
+            return;
+        }
+
+        if (!stageSignRect.gameObject.activeSelf)
+        {
+            return;
+        }
+
+        if (_isPlaying)
+        {
+            Debug.LogWarning($"{name}: ステージ看板の演出が重複して呼び出されました。");
+            return;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        _isPlaying = true;
+
+        try
+        {
+            if (exitDuration <= 0f)
+            {
+                stageSignRect.localPosition = initPosition.localPosition;
                 return;
             }
 
             await stageSignRect
-                .DOLocalMove(shownPosition.localPosition, enterDuration)
-                .SetEase(enterEase)
+                .DOLocalMove(initPosition.localPosition, exitDuration)
+                .SetEase(exitEase)
                 .ToUniTask(
                     TweenCancelBehaviour.KillAndCancelAwait,
                     cancellationToken);
@@ -85,6 +144,7 @@ public sealed class StageSignView : MonoBehaviour
         finally
         {
             _isPlaying = false;
+            SetVisible(false);
         }
     }
 

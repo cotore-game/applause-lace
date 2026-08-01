@@ -11,7 +11,7 @@ public sealed class CountdownPresenter : ICountdownPlayer
         _view = view;
     }
 
-    public async UniTask PlayAsync(CancellationToken cancellationToken)
+    public async UniTask PlayCountsAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -22,7 +22,18 @@ public sealed class CountdownPresenter : ICountdownPlayer
                     _view.CountIntervalSeconds,
                     cancellationToken);
             }
+        }
+        catch
+        {
+            _view.Hide();
+            throw;
+        }
+    }
 
+    public async UniTask PlayCelebrateAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
             _view.ShowCelebrate();
             await DelayAsync(
                 _view.CelebrateSeconds,
