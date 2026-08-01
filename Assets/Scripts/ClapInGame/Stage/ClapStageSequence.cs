@@ -10,6 +10,7 @@ public sealed class ClapStageSequence
     private readonly CurtainController _curtain;
     private readonly StageSignView _stageSignView;
 
+    /// <summary>ステージ内演出とGameCore演出の依存関係を受け取ります。</summary>
     public ClapStageSequence(
         IClapStageSceneView sceneView,
         IStageDialoguePlayer dialoguePlayer,
@@ -26,11 +27,14 @@ public sealed class ClapStageSequence
         _stageSignView = stageSignView;
     }
 
+    /// <summary>
+    /// Devシーン直接起動用に、看板・開幕から閉幕までステージ全体を実行します。
+    /// </summary>
     public async UniTask<ClapRoundResult> PlayAsync(
         ClapStageData stageData,
         CancellationToken cancellationToken)
     {
-        _sceneView.PrepareStage();
+        PrepareStage();
         _curtain.ResetCurtainPosition();
 
         await _stageSignView.EnterAsync(
@@ -41,6 +45,30 @@ public sealed class ClapStageSequence
             _curtain.OpenCurtainAsync(),
             _stageSignView.ExitAsync(cancellationToken));
 
+        ClapRoundResult result = await PlayContentAsync(
+            stageData,
+            cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        await _curtain.CloseCurtainAsync();
+
+        return result;
+    }
+
+    /// <summary>各Viewを初期状態へ戻し、GameFlowへReady通知できる状態にします。</summary>
+    public void PrepareStage()
+    {
+        _sceneView.PrepareStage();
+    }
+
+    /// <summary>
+    /// 開幕後のADV、カウントダウン、ゲーム本編、終了演出を実行します。
+    /// 幕とStageSignはGameCore側の責務として扱います。
+    /// </summary>
+    public async UniTask<ClapRoundResult> PlayContentAsync(
+        ClapStageData stageData,
+        CancellationToken cancellationToken)
+    {
         await _dialoguePlayer.PlayAsync(stageData.Dialogue, cancellationToken);
 
         _sceneView.ShowStartCutIn();
@@ -56,13 +84,12 @@ public sealed class ClapStageSequence
 
         await _countdownPlayer.PlayCelebrateAsync(cancellationToken);
 
-        ClapRoundResult result = await _presenter.PlayAsync(stageData, cancellationToken);
+        ClapRoundResult result = await _presenter.PlayAsync(
+            stageData,
+            cancellationToken);
 
         await _sceneView.PlayFinishCutInAsync(cancellationToken);
         await _sceneView.ShowResultAsync(result, stageData, cancellationToken);
-
-        cancellationToken.ThrowIfCancellationRequested();
-        await _curtain.CloseCurtainAsync();
 
         return result;
     }

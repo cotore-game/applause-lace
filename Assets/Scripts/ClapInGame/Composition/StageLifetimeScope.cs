@@ -1,11 +1,13 @@
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
+using SceneManagement;
 
 public class StageLifetimeScope : LifetimeScope
 {
     [Header("Stage Data")]
     [SerializeField] private ClapStageData stageData;
+    [SerializeField] private SceneId sceneId = SceneId.Stage1;
 
     [Header("Prefab Views")]
     [SerializeField] private ClapStageView stageView;
@@ -13,6 +15,7 @@ public class StageLifetimeScope : LifetimeScope
     protected override void Configure(IContainerBuilder builder)
     {
         builder.RegisterInstance(stageData);
+        builder.RegisterInstance(new SceneIdentity(sceneId));
         builder.RegisterComponent(stageView)
             .AsSelf()
             .As<IClapStageSceneView>();
