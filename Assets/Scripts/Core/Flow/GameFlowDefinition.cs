@@ -39,4 +39,33 @@ public sealed class GameFlowDefinition : ScriptableObject
 
     /// <summary>末尾まで実行した後、先頭から再開するかを示します。</summary>
     public bool Loop => loop;
+
+    private void OnValidate()
+    {
+        foreach (Step step in steps)
+        {
+            if (step == null)
+            {
+                Debug.LogError(
+                    $"{name}: GameFlowのStepにnullがあります。",
+                    this);
+                continue;
+            }
+
+            bool isClapStage = step.SceneId.IsClapStage();
+
+            if (isClapStage && step.StageData == null)
+            {
+                Debug.LogError(
+                    $"{name}: {step.SceneId}にはClapStageDataが必要です。",
+                    this);
+            }
+            else if (!isClapStage && step.StageData != null)
+            {
+                Debug.LogError(
+                    $"{name}: {step.SceneId}にはClapStageDataを設定できません。",
+                    this);
+            }
+        }
+    }
 }

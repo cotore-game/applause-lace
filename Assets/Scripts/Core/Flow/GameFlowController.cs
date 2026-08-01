@@ -12,6 +12,7 @@ public sealed class GameFlowController
     private readonly GameFlowDefinition _definition;
     private readonly ISceneLoader _sceneLoader;
     private readonly SceneFlowSignaler _signaler;
+    private readonly ClapStageRunContextStore _stageRunContextStore;
     private readonly CurtainController _curtain;
     private readonly StageSignView _stageSign;
     private readonly GameSession _session;
@@ -21,6 +22,7 @@ public sealed class GameFlowController
         GameFlowDefinition definition,
         ISceneLoader sceneLoader,
         SceneFlowSignaler signaler,
+        ClapStageRunContextStore stageRunContextStore,
         CurtainController curtain,
         StageSignView stageSign,
         GameSession session)
@@ -28,6 +30,7 @@ public sealed class GameFlowController
         _definition = definition;
         _sceneLoader = sceneLoader;
         _signaler = signaler;
+        _stageRunContextStore = stageRunContextStore;
         _curtain = curtain;
         _stageSign = stageSign;
         _session = session;
@@ -63,10 +66,25 @@ public sealed class GameFlowController
         CancellationToken cancellationToken)
     {
         SceneId sceneId = step.SceneId;
-        _signaler.Begin(sceneId);
+        ClapStageRunContext stageRunContext = step.StageData != null
+            ? new ClapStageRunContext(sceneId, step.StageData)
+            : null;
+
+        ValidateStep(step);
+        bool signalSessionStarted = false;
+        bool stageContextStarted = false;
 
         try
         {
+            _signaler.Begin(sceneId);
+            signalSessionStarted = true;
+
+            if (stageRunContext != null)
+            {
+                _stageRunContextStore.Begin(stageRunContext);
+                stageContextStarted = true;
+            }
+
             UniTask loadTask = _sceneLoader.LoadAdditiveAsync(
                 sceneId,
                 cancellationToken);
@@ -119,7 +137,32 @@ public sealed class GameFlowController
             }
 
             _stageSign.Hide();
-            _signaler.End(sceneId);
+            if (stageContextStarted)
+            {
+                _stageRunContextStore.End(stageRunContext);
+            }
+
+            if (signalSessionStarted)
+            {
+                _signaler.End(sceneId);
+            }
+        }
+    }
+
+    private static void ValidateStep(GameFlowDefinition.Step step)
+    {
+        bool isClapStage = step.SceneId.IsClapStage();
+
+        if (isClapStage && step.StageData == null)
+        {
+            throw new InvalidOperationException(
+                $"{step.SceneId}にはClapStageDataの設定が必要です。");
+        }
+
+        if (!isClapStage && step.StageData != null)
+        {
+            throw new InvalidOperationException(
+                $"{step.SceneId}は拍手ステージではないため、ClapStageDataを設定できません。");
         }
     }
 }

@@ -5,39 +5,47 @@ using VContainer.Unity;
 
 public sealed class ClapGameplayDevFlow : IAsyncStartable
 {
-    private readonly ClapStageData _stageData;
     private readonly ClapStageSequence _stageSequence;
-    private readonly SceneIdentity _sceneIdentity;
+    private readonly ClapStageStandaloneSettings _standaloneSettings;
+    private readonly IClapStageRunContextProvider _stageRunContextProvider;
     private readonly ISceneFlowPort _sceneFlow;
     private readonly GameSession _session;
 
     public ClapGameplayDevFlow(
-        ClapStageData stageData,
         ClapStageSequence stageSequence,
-        SceneIdentity sceneIdentity,
+        ClapStageStandaloneSettings standaloneSettings,
+        IClapStageRunContextProvider stageRunContextProvider,
         ISceneFlowPort sceneFlow,
         GameSession session)
     {
-        _stageData = stageData;
         _stageSequence = stageSequence;
-        _sceneIdentity = sceneIdentity;
+        _standaloneSettings = standaloneSettings;
+        _stageRunContextProvider = stageRunContextProvider;
         _sceneFlow = sceneFlow;
         _session = session;
     }
 
     public async UniTask StartAsync(CancellationToken cancellationToken)
     {
-        SceneId sceneId = _sceneIdentity.Id;
         ClapRoundResult result;
 
-        if (_sceneFlow.IsManaged(sceneId))
+        if (_stageRunContextProvider.TryGetCurrent(
+                out ClapStageRunContext runContext))
         {
+            SceneId sceneId = runContext.SceneId;
+            if (!_sceneFlow.IsManaged(sceneId))
+            {
+                throw new System.InvalidOperationException(
+                    $"{sceneId}のステージ実行設定は存在しますが、"
+                    + "対応するSceneFlowセッションがありません。");
+            }
+
             _stageSequence.PrepareStage();
             _sceneFlow.NotifyReady(sceneId);
             await _sceneFlow.WaitForEnterAsync(sceneId, cancellationToken);
 
             result = await _stageSequence.PlayContentAsync(
-                _stageData,
+                runContext.StageData,
                 cancellationToken);
 
             _session.Record(result);
@@ -45,7 +53,9 @@ public sealed class ClapGameplayDevFlow : IAsyncStartable
             return;
         }
 
-        result = await _stageSequence.PlayAsync(_stageData, cancellationToken);
+        result = await _stageSequence.PlayAsync(
+            _standaloneSettings.StageData,
+            cancellationToken);
         _session.Record(result);
     }
 }

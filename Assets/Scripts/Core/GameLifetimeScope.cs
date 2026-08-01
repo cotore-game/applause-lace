@@ -21,6 +21,9 @@ public class GameLifetimeScope : LifetimeScope
         builder.Register<SceneFlowSignaler>(Lifetime.Singleton)
             .AsSelf()
             .As<ISceneFlowPort>();
+        builder.Register<ClapStageRunContextStore>(Lifetime.Singleton)
+            .AsSelf()
+            .As<IClapStageRunContextProvider>();
         builder.Register<GameSession>(Lifetime.Singleton);
 
         if (sceneCatalog == null || gameFlowDefinition == null)

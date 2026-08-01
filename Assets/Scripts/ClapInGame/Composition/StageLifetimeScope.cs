@@ -2,20 +2,24 @@ using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 using SceneManagement;
+using UnityEngine.Serialization;
 
 public class StageLifetimeScope : LifetimeScope
 {
-    [Header("Stage Data")]
-    [SerializeField] private ClapStageData stageData;
-    [SerializeField] private SceneId sceneId = SceneId.Stage1;
+    [Header("Standalone Play Only")]
+    [FormerlySerializedAs("stageData")]
+    [SerializeField] private ClapStageData standaloneStageData;
+    [FormerlySerializedAs("sceneId")]
+    [SerializeField] private SceneId standaloneSceneId = SceneId.Stage1;
 
     [Header("Prefab Views")]
     [SerializeField] private ClapStageView stageView;
 
     protected override void Configure(IContainerBuilder builder)
     {
-        builder.RegisterInstance(stageData);
-        builder.RegisterInstance(new SceneIdentity(sceneId));
+        builder.RegisterInstance(new ClapStageStandaloneSettings(
+            standaloneSceneId,
+            standaloneStageData));
         builder.RegisterComponent(stageView)
             .AsSelf()
             .As<IClapStageSceneView>();

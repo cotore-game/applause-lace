@@ -10,4 +10,14 @@ namespace SceneManagement
         Stage3,
         TotalResult
     }
+
+    /// <summary><see cref="SceneId"/>のコンテンツ種別判定を提供します。</summary>
+    public static class SceneIdExtensions
+    {
+        /// <summary>拍手ゲームを実行するステージシーンかを返します。</summary>
+        public static bool IsClapStage(this SceneId sceneId)
+        {
+            return sceneId is SceneId.Stage1 or SceneId.Stage2 or SceneId.Stage3;
+        }
+    }
 }
