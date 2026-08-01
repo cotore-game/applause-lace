@@ -21,15 +21,8 @@ public sealed class CountdownView : MonoBehaviour
 
     public void Prepare()
     {
-        if (countdownImage != null)
-        {
-            countdownImage.enabled = false;
-        }
-
-        if (celebrateImage != null)
-        {
-            celebrateImage.enabled = false;
-        }
+        SetImageVisible(countdownImage, false);
+        SetImageVisible(celebrateImage, false);
 
         gameObject.SetActive(false);
     }
@@ -38,10 +31,7 @@ public sealed class CountdownView : MonoBehaviour
     {
         gameObject.SetActive(true);
 
-        if (celebrateImage != null)
-        {
-            celebrateImage.enabled = false;
-        }
+        SetImageVisible(celebrateImage, false);
 
         if (countdownImage == null)
         {
@@ -55,26 +45,30 @@ public sealed class CountdownView : MonoBehaviour
             1 => count1Sprite,
             _ => null
         };
-        countdownImage.enabled = countdownImage.sprite != null;
+        SetImageVisible(countdownImage, countdownImage.sprite != null);
     }
 
     public void ShowCelebrate()
     {
         gameObject.SetActive(true);
 
-        if (countdownImage != null)
-        {
-            countdownImage.enabled = false;
-        }
-
-        if (celebrateImage != null)
-        {
-            celebrateImage.enabled = true;
-        }
+        SetImageVisible(countdownImage, false);
+        SetImageVisible(celebrateImage, true);
     }
 
     public void Hide()
     {
         gameObject.SetActive(false);
+    }
+
+    private static void SetImageVisible(Image image, bool visible)
+    {
+        if (image == null)
+        {
+            return;
+        }
+
+        image.gameObject.SetActive(visible);
+        image.enabled = visible;
     }
 }
