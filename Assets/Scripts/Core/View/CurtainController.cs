@@ -118,20 +118,21 @@ public class CurtainController : MonoBehaviour
 
         Sequence sequence = DOTween.Sequence();
 
-        // 装飾カーテンから先に指定の閉位置に降りる
-        if (topDecoration != null && upperClosedTarget != null)
-        {
-            _ = sequence.Append(
-                topDecoration.DOAnchorPos(upperClosedTarget.anchoredPosition, curtainDownDuration * 0.6f)
-                    .SetEase(downEase)
-            );
-        }
-
-        // 大幕が指定の閉位置に降りる
+        // 閉幕全体がcurtainDownDuration内に収まるよう、両方を同時に降ろす。
         _ = sequence.Append(
             mainCurtain.DOAnchorPos(lowerClosedTarget.anchoredPosition, curtainDownDuration)
                 .SetEase(downEase)
         );
+
+        if (topDecoration != null && upperClosedTarget != null)
+        {
+            _ = sequence.Join(
+                topDecoration.DOAnchorPos(
+                        upperClosedTarget.anchoredPosition,
+                        curtainDownDuration * 0.6f)
+                    .SetEase(downEase)
+            );
+        }
 
         await sequence.ToUniTask();
         isOpened = false; // 状態を閉幕に更新
