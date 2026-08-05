@@ -22,7 +22,8 @@ public class StageLifetimeScope : LifetimeScope
             standaloneStageData));
         builder.RegisterComponent(stageView)
             .AsSelf()
-            .As<IClapStageSceneView>();
+            .As<IClapStageSceneView>()
+            .As<IClapGameplayView>();
 
         if (stageView.Countdown != null)
         {

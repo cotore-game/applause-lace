@@ -3,7 +3,10 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-public sealed class ClapStageView : MonoBehaviour, IClapStageSceneView
+public sealed class ClapStageView :
+    MonoBehaviour,
+    IClapStageSceneView,
+    IClapGameplayView
 {
     [Header("ゲーム中Prefab")]
     [SerializeField] private ClapHandButtonView clapHandButton;

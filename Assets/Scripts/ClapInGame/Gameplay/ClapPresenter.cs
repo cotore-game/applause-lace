@@ -6,9 +6,12 @@ public class ClapPresenter : IDisposable
 {
     private readonly ClapGameplayManager _manager;
     private readonly ClapGameModel _model;
-    private readonly ClapStageView _view;
+    private readonly IClapGameplayView _view;
 
-    public ClapPresenter(ClapGameplayManager manager, ClapGameModel model, ClapStageView view)
+    public ClapPresenter(
+        ClapGameplayManager manager,
+        ClapGameModel model,
+        IClapGameplayView view)
     {
         _manager = manager;
         _model = model;
